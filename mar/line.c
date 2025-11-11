@@ -13,6 +13,8 @@ struct line* content_to_line(const char* content, size_t size){
     }
 
     lp->l_content = NULL;
+    lp->l_back = NULL;
+    lp->l_next = NULL;
 
     size_t i = 0;
     size_t start_content = 0;
@@ -31,7 +33,7 @@ struct line* content_to_line(const char* content, size_t size){
             strncpy(line_content, &content[start_content], line_size);
             line_content[line_size] = '\0';
 
-            lp_it->l_next = l_alloc(line_content, line_size);
+            lp_it->l_next = l_alloc(line_content, line_size, lp_it);
             lp_it = lp_it->l_next;
             start_content = i + 1;
         } else if(content[i] == '\0'){
@@ -43,13 +45,14 @@ struct line* content_to_line(const char* content, size_t size){
     }
 
     lp_it = lp->l_next;
+    lp_it->l_back = NULL;
     free(lp);
     lp = NULL;
 
     return lp_it;
 }
 
-struct line* l_alloc(char* content, size_t size){
+struct line* l_alloc(char* content, size_t size, struct line* lp_back){
     struct line* lp;
 
     if((lp = (struct line*)malloc(sizeof(struct line))) == NULL){
@@ -60,6 +63,7 @@ struct line* l_alloc(char* content, size_t size){
     lp->l_content = content;
     lp->l_size = size;
     lp->l_next = NULL;
+    lp->l_back = lp_back;
     return lp;
 }
 

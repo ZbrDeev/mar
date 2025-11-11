@@ -12,7 +12,7 @@ struct line {
 
 struct line* content_to_line(const char* content, size_t size);
 
-struct line* l_alloc(char* content, size_t size);
+struct line* l_alloc(char* content, size_t size, struct line* lp_back);
 
 void l_free(struct line* lp);
 

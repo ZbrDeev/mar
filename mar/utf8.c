@@ -23,7 +23,7 @@ struct unicode_encoding utf8_to_unicode(char* line, size_t *index, size_t len){
         return unicode_result;
     }
 
-    for(int i = 1; i < bytes; ++i, ++(*index)){
+    for(size_t i = 1; i < bytes; ++i, ++(*index)){
         c = line[*index];
 
         if((c & 0xc0) != 0x80){
