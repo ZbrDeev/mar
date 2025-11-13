@@ -19,12 +19,14 @@ struct unicode_encoding utf8_to_unicode(char* line, size_t *index, size_t len){
         mask >>= 1;
     }
 
-    if(bytes > 6 || bytes > len){
+    if(bytes > MAX_UTF8_SIZE || bytes > len){
         return unicode_result;
     }
 
-    for(size_t i = 1; i < bytes; ++i, ++(*index)){
-        c = line[*index];
+    result = c & (mask - 1);
+
+    for(size_t i = 1; i < bytes; ++i){
+        c = line[(*index)+i];
 
         if((c & 0xc0) != 0x80){
             return  unicode_result;
@@ -37,4 +39,25 @@ struct unicode_encoding utf8_to_unicode(char* line, size_t *index, size_t len){
     unicode_result.bytes_size = bytes;
 
     return unicode_result;
+}
+
+struct utf8_encoding unicode_to_utf8(struct unicode_encoding unicode){
+    struct utf8_encoding utf8;
+    utf8.bytes_size = unicode.bytes_size;
+
+    if(unicode.bytes_size == 1){
+        utf8.result[0] = 0x7f & unicode.result;
+        return utf8;
+    }
+
+    utf8.result[0] = 0b11110000 << (3-(unicode.bytes_size-1));
+    utf8.result[0] |= (unicode.result >> 6 * (unicode.bytes_size-1)) & (0x3f >> (unicode.bytes_size-1));
+
+
+    for(int i = 1; i < unicode.bytes_size; ++i){
+        utf8.result[i] =  unicode.result >> 6*(unicode.bytes_size-i-1) & 0x3f;
+        utf8.result[i] |= 0x80;
+    }
+
+    return utf8;
 }

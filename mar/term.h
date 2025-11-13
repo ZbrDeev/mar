@@ -1,0 +1,20 @@
+#ifndef TERM_H
+#define TERM_H
+
+#include "utf8.h"
+#include <termios.h>
+
+#define MAX_ROW 100
+#define MAX_COL 100
+
+static struct termios newterm, oldterm;
+
+void init_term(void);
+
+void close_term(void);
+
+void flush(void);
+
+void tputc(struct unicode_encoding unicode);
+
+#endif // TERM_H
