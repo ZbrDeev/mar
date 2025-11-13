@@ -46,7 +46,7 @@ struct utf8_encoding unicode_to_utf8(struct unicode_encoding unicode){
     utf8.bytes_size = unicode.bytes_size;
 
     if(unicode.bytes_size == 1){
-        utf8.result[0] = 0x7f & unicode.result;
+        utf8.result[0] = unicode.result;
         return utf8;
     }
 
