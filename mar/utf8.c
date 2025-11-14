@@ -1,11 +1,11 @@
 #include "utf8.h"
 
-struct unicode_encoding utf8_to_unicode(char* line, size_t *index, size_t len){
+struct unicode_encoding utf8_to_unicode(const char* line, size_t index, size_t len){
     struct unicode_encoding unicode_result;
     unicode_result.bytes_size = 1;
-    unicode_result.result = line[*index];
+    unicode_result.result = line[index];
 
-    unsigned char c = line[*index];
+    unsigned char c = line[index];
     unsigned bytes = 1;
     unsigned result = 0;
 
@@ -26,7 +26,7 @@ struct unicode_encoding utf8_to_unicode(char* line, size_t *index, size_t len){
     result = c & (mask - 1);
 
     for(size_t i = 1; i < bytes; ++i){
-        c = line[(*index)+i];
+        c = line[index+i];
 
         if((c & 0xc0) != 0x80){
             return  unicode_result;
