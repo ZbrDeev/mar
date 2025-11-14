@@ -12,7 +12,7 @@ struct __attribute__((packed)) unicode_encoding {
 
 struct __attribute__((packed)) utf8_encoding {
     unsigned bytes_size;
-    char result[MAX_UTF8_SIZE];
+    unsigned char result[MAX_UTF8_SIZE];
 };
 
 struct unicode_encoding utf8_to_unicode(char* line, size_t *index, size_t len);
