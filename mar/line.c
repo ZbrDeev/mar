@@ -41,7 +41,7 @@ struct line* content_to_line(const char* content, size_t size){
     return lp_it;
 }
 
-static struct unicode_encoding* content_to_unicode(const char* content, size_t begin, size_t end, size_t *real_size){
+static struct unicode_encoding* line_to_unicode(const char* content, size_t begin, size_t end, size_t *real_size){
     struct unicode_encoding* unicodes = (struct unicode_encoding*)malloc(sizeof(struct unicode_encoding));
     assert(unicodes != NULL);
 
@@ -72,7 +72,7 @@ struct line* l_alloc(const char* content, size_t begin, size_t end, struct line*
     }
 
     size_t size = 0;
-    lp->l_content = content_to_unicode(content, begin, end, &size);
+    lp->l_content = line_to_unicode(content, begin, end, &size);
     lp->l_size = size;
     lp->l_next = NULL;
     lp->l_back = lp_back;
