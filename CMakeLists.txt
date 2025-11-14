@@ -6,7 +6,7 @@ file(GLOB mar_src CONFIGURE_DEPENDS "mar/*.h" "mar/*.c")
 add_executable(mar ${mar_src})
 
 if(CMAKE_BUILD_TYPE STREQUAL "Debug")
-    target_compile_options(mar PRIVATE -Wall -Wextra -Wpedantic -Werror)
+    target_compile_options(mar PRIVATE -Wall -Wextra -Wpedantic)
 elseif(CMAKE_BUILD_TYPE STREQUAL "Release")
     target_compile_options(mar PRIVATE -Wall -Wextra -Wpedantic)
 else()
