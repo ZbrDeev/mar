@@ -1,4 +1,5 @@
 #include "line.h"
+#include "utf8.h"
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -22,19 +23,7 @@ struct line* content_to_line(const char* content, size_t size){
 
     while(i < size){
         if(content[i] == '\n'){
-            char *line_content;
-            size_t line_size = i - start_content;
-
-            if((line_content = malloc(line_size+1)) == NULL){
-                printf("Failted to alloc line content\n");
-                return NULL;
-            }
-
-            strncpy(line_content, &content[start_content], line_size);
-            line_content[line_size] = '\0';
-
-            lp_it->l_next = l_alloc(line_content, line_size, lp_it);
-            lp_it = lp_it->l_next;
+            lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
             start_content = i + 1;
         } else if(content[i] == '\0'){
             // TODO: CHECK IF THERE IS STILL VALUES
@@ -52,7 +41,29 @@ struct line* content_to_line(const char* content, size_t size){
     return lp_it;
 }
 
-struct line* l_alloc(char* content, size_t size, struct line* lp_back){
+static struct unicode_encoding* content_to_unicode(const char* content, size_t begin, size_t end, size_t *real_size){
+    struct unicode_encoding* unicodes = (struct unicode_encoding*)malloc(sizeof(struct unicode_encoding));
+    assert(unicodes != NULL);
+
+    size_t index = 0;
+    size_t size = end - begin;
+
+    while(index < size){
+        ++(*real_size);
+        struct unicode_encoding result = utf8_to_unicode(&content[begin], index, size);
+        index += result.bytes_size;
+
+        struct unicode_encoding* temp = (struct unicode_encoding*)realloc(unicodes, sizeof(struct unicode_encoding) * (*real_size));
+        assert(temp != NULL);
+        unicodes = temp;
+
+        unicodes[(*real_size)-1] = result;
+    }
+
+    return unicodes;
+}
+
+struct line* l_alloc(const char* content, size_t begin, size_t end, struct line* lp_back){
     struct line* lp;
 
     if((lp = (struct line*)malloc(sizeof(struct line))) == NULL){
@@ -60,7 +71,8 @@ struct line* l_alloc(char* content, size_t size, struct line* lp_back){
         return NULL;
     }
 
-    lp->l_content = content;
+    size_t size = 0;
+    lp->l_content = content_to_unicode(content, begin, end, &size);
     lp->l_size = size;
     lp->l_next = NULL;
     lp->l_back = lp_back;
@@ -68,7 +80,7 @@ struct line* l_alloc(char* content, size_t size, struct line* lp_back){
 }
 
 void l_free(struct line* lp){
-    if(lp != NULL && lp->l_next != NULL){
+    if(lp->l_next != NULL){
         l_free(lp->l_next);
     }
 
