@@ -4,10 +4,13 @@
 #include "utf8.h"
 #include <termios.h>
 
-#define MAX_ROW 100
+#define MAX_LINE 100
 #define MAX_COL 100
 
 static struct termios newterm, oldterm;
+
+static int line = 1;
+static int column = 1;
 
 void init_term(void);
 
