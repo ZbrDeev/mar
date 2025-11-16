@@ -4,6 +4,8 @@
 #include "utf8.h"
 #include <stddef.h>
 
+static unsigned int line_size = 1;
+
 struct line {
     struct line* l_back;
     struct line* l_next;

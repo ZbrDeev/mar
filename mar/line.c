@@ -31,6 +31,7 @@ struct line* content_to_line(const char* content, size_t size){
         }
 
         ++i;
+        ++line_size;
     }
 
     lp_it = lp->l_next;
