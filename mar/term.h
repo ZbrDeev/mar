@@ -10,8 +10,8 @@
 
 static struct termios newterm, oldterm;
 
-static int line = 1;
-static int column = 1;
+static unsigned int line = 1;
+static unsigned int column = 1;
 static bool should_close = false;
 
 void init_term(void);
