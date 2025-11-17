@@ -15,7 +15,7 @@ struct __attribute__((packed)) utf8_encoding {
     unsigned char result[MAX_UTF8_SIZE];
 };
 
-struct unicode_encoding utf8_to_unicode(const char* line, size_t index, size_t len);
+struct unicode_encoding utf8_to_unicode(const unsigned char* line, size_t index, size_t len);
 
 struct utf8_encoding unicode_to_utf8(struct unicode_encoding unicode);
 
