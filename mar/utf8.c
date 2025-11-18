@@ -1,4 +1,5 @@
 #include "utf8.h"
+#include <stdio.h>
 
 struct unicode_encoding utf8_to_unicode(const unsigned char* line, size_t index, size_t len){
     struct unicode_encoding unicode_result;
@@ -6,7 +7,7 @@ struct unicode_encoding utf8_to_unicode(const unsigned char* line, size_t index,
     unicode_result.result = line[index];
 
     unsigned char c = line[index];
-    unsigned bytes = 1;
+    size_t bytes = 1;
     unsigned result = 0;
 
     if(c < 0xc0){

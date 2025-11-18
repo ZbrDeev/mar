@@ -6,12 +6,12 @@
 #define MAX_UTF8_SIZE 4
 
 struct __attribute__((packed)) unicode_encoding {
-    unsigned bytes_size;
+    size_t bytes_size;
     unsigned result;
 };
 
 struct __attribute__((packed)) utf8_encoding {
-    unsigned bytes_size;
+    size_t bytes_size;
     unsigned char result[MAX_UTF8_SIZE];
 };
 
