@@ -14,7 +14,7 @@ struct node {
 };
 
 struct hashmap {
-    struct node** nodes;
+    struct node* nodes[MAX_CAPACITY];
 };
 
 struct hashmap h_init(void);

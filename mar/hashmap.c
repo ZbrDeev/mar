@@ -4,8 +4,6 @@
 struct hashmap h_init(void){
     struct hashmap hash;
 
-    hash.nodes = (struct node**)malloc(sizeof(struct node*) * MAX_CAPACITY);
-
     for(size_t i = 0; i < MAX_CAPACITY; ++i){
         hash.nodes[i] = NULL;
     }
@@ -80,6 +78,4 @@ void h_free(struct hashmap* hp){
             free_node(hp->nodes[i]);
         }
     }
-
-    free(hp->nodes);
 }
