@@ -1,37 +1,46 @@
 #include "keybind.h"
 #include "hashmap.h"
 #include "ansi.h"
-#include "term.h"
+#include "line.h"
+#include "utf8.h"
 #include <poll.h>
 #include <unistd.h>
+#include <stdbool.h>
+
+static bool should_close = false;
+static size_t line = 1;
+static size_t column = 1;
 
 static void move_cursor_up(void){
-    if(line > 1){
+    if(line >= 1){
         --line;
-        move_cursor();
+        move_cursor(line, column);
         erase_line();
+    }else{
+        line = 1;
     }
 }
 
 static void move_cursor_down(void){
     ++line;
-    move_cursor();
+    move_cursor(line, column);
     erase_line();
 }
 
 static void move_cursor_right(void){
-    if(column > 1){
-        --column;
-    }
-
-    move_cursor();
+    ++column;
+    move_cursor(line, column);
     erase_line();
 }
 
 static void move_cursor_left(void){
-    ++column;
-    move_cursor();
-    erase_line();
+    if(column >= 1){
+        --column;
+        move_cursor(line, column);
+        erase_line();
+    }else{
+        column = 1;
+    }
 }
 
 static void quit_terminal(void){
@@ -52,10 +61,10 @@ void init_keybind(void){
     h_insert_value(&keybind_hashmap, ESCAPE & 'Q' , &quit_terminal);
 }
 
-static void exec_function(unsigned char keys[3], unsigned index){
+static void exec_function(unsigned char keys[MAX_KEY_SIZE], size_t index, struct line* lp){
     unsigned key_maker = keys[0];
 
-    for(size_t i = 1; i<index; ++i){
+    for(size_t i = 1; i < index; ++i){
         key_maker &= keys[i];
     }
 
@@ -66,12 +75,32 @@ static void exec_function(unsigned char keys[3], unsigned index){
     }
 }
 
-void read_key(){
+static void update_line(unsigned char keys[MAX_KEY_SIZE], size_t index, struct line* lp){
+    struct line* lp_it = lp;
+
+    for(size_t i = 0; i < line-1; ++i){
+        lp_it = lp_it->l_next;
+    }
+
+    size_t i = 0;
+    while(i < index){
+        struct unicode_encoding unicode = utf8_to_unicode(keys, i, index);
+
+        i += unicode.bytes_size;
+
+        insert_char_in_line(lp_it, unicode, column);
+        ++column;
+    }
+
+    print_line(lp_it, line, column);
+}
+
+void read_key(struct line* lp){
     struct pollfd key_poll;
     key_poll.fd = STDIN_FILENO;
     key_poll.events = POLLIN;
 
-    unsigned char keys[3];
+    unsigned char keys[MAX_KEY_SIZE];
     size_t index = 0;
 
     while(!should_close) {
@@ -82,8 +111,14 @@ void read_key(){
 
         keys[index++] = a;
 
-        if(poll(&key_poll, 1, 1) <= 0 || index >= 3){
-            exec_function(keys, index);
+        if(poll(&key_poll, 1, 1) <= 0 || index >= MAX_KEY_SIZE){
+
+            if(keys[0] == ESCAPE){
+                exec_function(keys, index, lp);
+            }else{
+                update_line(keys, index, lp);
+            }
+
             index = 0;
         }
     }

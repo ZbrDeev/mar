@@ -3,16 +3,11 @@
 
 #include "utf8.h"
 #include <termios.h>
-#include <stdbool.h>
 
 #define MAX_LINE 100
 #define MAX_COL 100
 
 static struct termios newterm, oldterm;
-
-static unsigned int line = 1;
-static unsigned int column = 1;
-static bool should_close = false;
 
 void init_term(void);
 

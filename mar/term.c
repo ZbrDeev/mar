@@ -32,4 +32,5 @@ void tputc(struct unicode_encoding unicode){
     struct utf8_encoding utf8 = unicode_to_utf8(unicode);
 
     fwrite(utf8.result, 1, utf8.bytes_size, stdout);
+    flush();
 }
