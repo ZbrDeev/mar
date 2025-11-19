@@ -11,11 +11,12 @@ static bool should_close = false;
 static size_t line = 1;
 static size_t column = 1;
 
+// TODO: If we have a big message with some multiple utf8 for example (hel🙂o) this will produce an error because we have a max message of 4 byte
+
 static void move_cursor_up(void){
     if(line >= 1){
         --line;
-        move_cursor(line, column);
-        erase_line();
+        move_cursor(line, column);        
     }else{
         line = 1;
     }
@@ -23,21 +24,18 @@ static void move_cursor_up(void){
 
 static void move_cursor_down(void){
     ++line;
-    move_cursor(line, column);
-    erase_line();
+    move_cursor(line, column);   
 }
 
 static void move_cursor_right(void){
     ++column;
-    move_cursor(line, column);
-    erase_line();
+    move_cursor(line, column);    
 }
 
 static void move_cursor_left(void){
     if(column >= 1){
         --column;
         move_cursor(line, column);
-        erase_line();
     }else{
         column = 1;
     }
