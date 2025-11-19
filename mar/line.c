@@ -42,7 +42,7 @@ struct line* content_to_line(const unsigned char* content, size_t size){
     return lp_it;
 }
 
-static struct unicode_column* line_to_unicode(const unsigned char* content, size_t begin, size_t end, size_t *real_size){
+static void line_to_unicode(const unsigned char* content, size_t begin, size_t end, struct line* lp){
     struct unicode_column* unicodes = (struct unicode_column*)malloc(sizeof(struct unicode_column));
     assert(unicodes != NULL);
 
@@ -55,7 +55,7 @@ static struct unicode_column* line_to_unicode(const unsigned char* content, size
     size_t size = end - begin;
 
     while(index < size){
-        ++(*real_size);
+        ++lp->l_size;
         struct unicode_encoding result = utf8_to_unicode(&content[begin], index, size);
         index += result.bytes_size;
 
@@ -68,12 +68,14 @@ static struct unicode_column* line_to_unicode(const unsigned char* content, size
         unicode_it->u_next = NULL;
     }
 
+    lp->l_last_content = unicode_it;
+    
     unicode_it = unicodes->u_next;
     unicode_it->u_back = NULL;
     free(unicodes);
     unicodes = NULL;
 
-    return unicode_it;
+    lp->l_content = unicode_it;
 }
 
 struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, struct line* lp_back){
@@ -84,11 +86,11 @@ struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, str
         return NULL;
     }
 
-    size_t size = 0;
-    lp->l_content = line_to_unicode(content, begin, end, &size);
-    lp->l_size = size;
+    lp->l_size = 0;
     lp->l_next = NULL;
     lp->l_back = lp_back;
+    line_to_unicode(content, begin, end, lp);
+
     return lp;
 }
 

@@ -16,6 +16,7 @@ struct line {
     struct line* l_back;
     struct line* l_next;
     struct unicode_column* l_content;
+    struct unicode_column* l_last_content;
     size_t l_size;
 };
 

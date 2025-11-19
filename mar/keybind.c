@@ -91,6 +91,7 @@ static void update_line(unsigned char keys[MAX_KEY_SIZE], size_t index, struct l
         ++column;
     }
 
+    erase_line();
     print_line(lp_it, line, column);
 }
 
@@ -104,12 +105,40 @@ static void remove_char(struct line* lp){
     struct unicode_column* unicode_it = lp_it->l_content;
 
 
-    if(column == 0){
-        // TODO: fusion this line to the previous line 
+    if(column == 0 && line > 0){
+        struct line* lp_temp = lp_it;
+        lp_it = lp_it->l_back;
+
+        lp_it->l_last_content->u_next = lp_temp->l_content;
+        lp_temp->l_content->u_back = lp_it->l_last_content;
+
+        struct unicode_column* unicode_temp = lp_temp->l_content;
+
+        while(unicode_temp->u_next != NULL)
+            unicode_temp = unicode_temp->u_next;
+
+        lp_it->l_last_content = unicode_temp;
+
+        if(lp_temp->l_next != NULL){
+            lp_temp->l_next->l_back = lp_it;
+            lp_it->l_next = lp_temp->l_next;
+        }else{
+            lp_it->l_next = NULL;
+        }
+
+        --line;
+        column = lp_it->l_size;
+        lp_it->l_size += lp_temp->l_size;
+
+        free(lp_temp);
+        print_screen(lp, line, column);
+
+        return;
+    }else if(column == 0){
         return;
     }
     
-    for(size_t i = 0; i < column-1; ++i){
+    for(size_t i = 0; i < column; ++i){
         unicode_it = unicode_it->u_next;
     }
 
@@ -127,6 +156,8 @@ static void remove_char(struct line* lp){
 done:
     free(temp);
     --column;
+    --lp_it->l_size;
+    erase_line();
     print_line(lp_it, line, column);
 }
 
