@@ -5,7 +5,7 @@
 
 void move_cursor(size_t line, size_t column){
     putc(ESCAPE, stdout);
-    printf("[%ld;%ldH", line, column);
+    printf("[%ld;%ldH", line+1, column+1);
     flush();
 }
 
@@ -16,7 +16,7 @@ void erase_line(void){
 
 void print_line(struct line* lp, size_t line, size_t column){
     erase_line();
-    move_cursor(line, 1);
+    move_cursor(line, 0);
     struct unicode_column* unicode_it = lp->l_content;
 
     for(size_t i = 0; i < lp->l_size; ++i){

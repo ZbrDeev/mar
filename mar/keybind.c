@@ -4,12 +4,13 @@
 #include "line.h"
 #include "utf8.h"
 #include <poll.h>
+#include <stdlib.h>
 #include <unistd.h>
 #include <stdbool.h>
 
 static bool should_close = false;
-static size_t line = 1;
-static size_t column = 1;
+static size_t line = 0;
+static size_t column = 0;
 
 // TODO: If we have a big message with some multiple utf8 for example (hel🙂o) this will produce an error because we have a max message of 4 byte
 
@@ -18,7 +19,7 @@ static void move_cursor_up(void){
         --line;
         move_cursor(line, column);        
     }else{
-        line = 1;
+        line = 0;
     }
 }
 
@@ -37,7 +38,7 @@ static void move_cursor_left(void){
         --column;
         move_cursor(line, column);
     }else{
-        column = 1;
+        column = 0;
     }
 }
 
@@ -76,7 +77,7 @@ static void exec_function(unsigned char keys[MAX_KEY_SIZE], size_t index, struct
 static void update_line(unsigned char keys[MAX_KEY_SIZE], size_t index, struct line* lp){
     struct line* lp_it = lp;
 
-    for(size_t i = 0; i < line-1; ++i){
+    for(size_t i = 0; i < line; ++i){
         lp_it = lp_it->l_next;
     }
 
@@ -90,6 +91,42 @@ static void update_line(unsigned char keys[MAX_KEY_SIZE], size_t index, struct l
         ++column;
     }
 
+    print_line(lp_it, line, column);
+}
+
+static void remove_char(struct line* lp){
+    struct line* lp_it = lp;
+
+    for(size_t i = 0; i < line; ++i){
+        lp_it = lp_it->l_next;
+    }
+
+    struct unicode_column* unicode_it = lp_it->l_content;
+
+
+    if(column == 0){
+        // TODO: fusion this line to the previous line 
+        return;
+    }
+    
+    for(size_t i = 0; i < column-1; ++i){
+        unicode_it = unicode_it->u_next;
+    }
+
+    struct unicode_column* temp = unicode_it;
+
+    if(temp->u_back == NULL){
+        lp_it->l_content = lp_it->l_content->u_next;
+        lp_it->l_content->u_back = NULL;
+        goto done;
+    }
+    
+    unicode_it = unicode_it->u_back;
+    unicode_it->u_next = temp->u_next;
+    
+done:
+    free(temp);
+    --column;
     print_line(lp_it, line, column);
 }
 
@@ -113,6 +150,8 @@ void read_key(struct line* lp){
 
             if(keys[0] == ESCAPE){
                 exec_function(keys, index, lp);
+            }else if(keys[0] == DELETE_KEY){
+                remove_char(lp);
             }else{
                 update_line(keys, index, lp);
             }

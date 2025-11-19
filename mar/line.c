@@ -112,7 +112,7 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
 
     size_t i = 0;
 
-    for(i = 0; i < column - 1; ++i){
+    for(i = 0; i < column; ++i){
         if(unicode_it->u_next == NULL){
             insert_unicode_node(unicode_it, unicode);
 
