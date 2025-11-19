@@ -6,6 +6,7 @@
 void move_cursor(size_t line, size_t column){
     putc(ESCAPE, stdout);
     printf("[%ld;%ldH", line, column);
+    flush();
 }
 
 void erase_line(void){
@@ -19,9 +20,9 @@ void print_line(struct line* lp, size_t line, size_t column){
     struct unicode_column* unicode_it = lp->l_content;
 
     for(size_t i = 0; i < lp->l_size; ++i){
-        if(unicode_it == NULL){
+        if(unicode_it == NULL)
             break;
-        }
+        
 
         tputc(unicode_it->unicode);
 
@@ -29,7 +30,6 @@ void print_line(struct line* lp, size_t line, size_t column){
     }
 
     move_cursor(line, column);
-    flush();
 }
 
 void clear_screen(void){
