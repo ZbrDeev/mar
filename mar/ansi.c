@@ -14,8 +14,21 @@ void erase_line(void){
     printf("[K");
 }
 
+void print_screen(struct line* lp, size_t line, size_t column){
+    clear_screen();
+    struct line* lp_it = lp;
+
+    size_t temp_line = 0;
+    while(lp_it != NULL){
+        print_line(lp_it, temp_line++, 0);
+
+        lp_it = lp_it->l_next;
+    }
+
+    move_cursor(line, column);
+}
+
 void print_line(struct line* lp, size_t line, size_t column){
-    erase_line();
     move_cursor(line, 0);
     struct unicode_column* unicode_it = lp->l_content;
 
