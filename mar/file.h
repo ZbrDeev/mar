@@ -5,6 +5,6 @@
 
 FILE* open_file(const char* filename);
 
-char* read_file(FILE* fp, size_t *size);
+unsigned char* read_file(FILE* fp, size_t *size);
 
 #endif // FILE_H

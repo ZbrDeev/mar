@@ -14,7 +14,7 @@ FILE* open_file(const char* filename){
     return fp;
 }
 
-char* read_file(FILE* fp, size_t *size){
+unsigned char* read_file(FILE* fp, size_t *size){
     // Go to the end of file and calc the size of the file content
     if (fseek(fp, 0, SEEK_END) != 0) {
         printf("Failed to read the file\n");
@@ -32,7 +32,7 @@ char* read_file(FILE* fp, size_t *size){
 
     rewind(fp);
 
-    char *buffer = (char *)malloc(*size + 1);
+    unsigned char *buffer = (unsigned char *)malloc(*size + 1);
     buffer[*size] = '\0';
 
     fread(buffer, *size, 1, fp);
