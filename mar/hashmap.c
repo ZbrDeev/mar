@@ -11,36 +11,16 @@ struct hashmap h_init(void){
     return hash;
 }
 
-struct node* h_navigate_in_node(struct node* np, unsigned key){
-    while(np != NULL && np->next != NULL){
-        if(np->key == key){
-            return np;
-        }
-
-        np = np->next;
-    }
-
-    return NULL;
-}
-
 struct node* h_get_value(struct hashmap* hp, unsigned key){
     unsigned key_hashed = CALC_KEY_INDEX(key);
     struct node* np = hp->nodes[key_hashed];
 
-    if(np == NULL){
-        return NULL;
-    }
-
-    while(np->next != NULL){
+    while(np != NULL){
         if(np->key == key){
             return np;
         }
 
         np = np->next;
-    }
-
-    if(np->key == key){
-        return np;
     }
 
     return NULL;

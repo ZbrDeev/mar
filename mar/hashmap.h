@@ -19,8 +19,6 @@ struct hashmap {
 
 struct hashmap h_init(void);
 
-struct node* h_navigate_in_node(struct node* np, unsigned key);
-
 struct node* h_get_value(struct hashmap* hp, unsigned key);
 
 void h_insert_value(struct hashmap* hp, unsigned key, hashmap_function_t* function);
