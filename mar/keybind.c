@@ -102,9 +102,6 @@ static void remove_char(struct line* lp){
         lp_it = lp_it->l_next;
     }
 
-    struct unicode_column* unicode_it = lp_it->l_content;
-
-
     if(column == 0 && line > 0){
         struct line* lp_temp = lp_it;
         lp_it = lp_it->l_back;
@@ -112,12 +109,7 @@ static void remove_char(struct line* lp){
         lp_it->l_last_content->u_next = lp_temp->l_content;
         lp_temp->l_content->u_back = lp_it->l_last_content;
 
-        struct unicode_column* unicode_temp = lp_temp->l_content;
-
-        while(unicode_temp->u_next != NULL)
-            unicode_temp = unicode_temp->u_next;
-
-        lp_it->l_last_content = unicode_temp;
+        lp_it->l_last_content = lp_temp->l_last_content;
 
         if(lp_temp->l_next != NULL){
             lp_temp->l_next->l_back = lp_it;
@@ -137,12 +129,18 @@ static void remove_char(struct line* lp){
     }else if(column == 0){
         return;
     }
+
+    struct unicode_column* unicode_it = lp_it->l_content;
     
     for(size_t i = 0; i < column; ++i){
+        if(unicode_it->u_next == NULL){
+            break;
+        }
+
         unicode_it = unicode_it->u_next;
     }
 
-    struct unicode_column* temp = unicode_it;
+    struct unicode_column* temp = unicode_it->u_back;
 
     if(temp->u_back == NULL){
         lp_it->l_content = lp_it->l_content->u_next;
@@ -150,8 +148,8 @@ static void remove_char(struct line* lp){
         goto done;
     }
     
-    unicode_it = unicode_it->u_back;
-    unicode_it->u_next = temp->u_next;
+    unicode_it->u_back = temp->u_back;
+    temp->u_back->u_next = unicode_it;
     
 done:
     free(temp);

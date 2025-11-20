@@ -109,7 +109,7 @@ static void insert_unicode_node(struct unicode_column* up, struct unicode_encodi
 }
 
 void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_t column){
-    lp->l_size += 1;
+    ++lp->l_size;
     struct unicode_column* unicode_it = lp->l_content;
 
     size_t i = 0;
