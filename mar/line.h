@@ -4,8 +4,6 @@
 #include "utf8.h"
 #include <stddef.h>
 
-static size_t line_size = 1;
-
 struct unicode_column {
     struct unicode_encoding unicode;
     struct unicode_column* u_back;

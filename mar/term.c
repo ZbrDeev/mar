@@ -4,6 +4,8 @@
 #include <termios.h>
 #include <unistd.h>
 
+static struct termios newterm, oldterm;
+
 void init_term(void){
     tcgetattr(STDIN_FILENO, &oldterm);
 

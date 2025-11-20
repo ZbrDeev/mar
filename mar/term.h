@@ -7,8 +7,6 @@
 #define MAX_LINE 100
 #define MAX_COL 100
 
-static struct termios newterm, oldterm;
-
 void init_term(void);
 
 void close_term(void);
