@@ -97,26 +97,48 @@ static void insert_unicode_node(struct unicode_column* up, struct unicode_encodi
     struct unicode_column* temp = (struct unicode_column*)malloc(sizeof(struct unicode_column));
 
     temp->unicode = unicode;
-    temp->u_next = up;
-    temp->u_back = up->u_back;
+    temp->u_next = NULL;
+    temp->u_back = NULL;
 
-    if(up->u_back != NULL){
-        up->u_back->u_next = temp;
+    if(up->u_next != NULL){
+        temp->u_next = up->u_next;
+        up->u_next->u_back = temp;
     }
     
-    up->u_back = temp;
+    up->u_next = temp;
+    temp->u_back = up;
 }
 
 void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_t column){
     ++lp->l_size;
     struct unicode_column* unicode_it = lp->l_content;
 
-    size_t i = 0;
+    if(unicode_it == NULL){
+        lp->l_content = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+        lp->l_content->unicode = unicode;
+        lp->l_content->u_back = NULL;
+        lp->l_content->u_next = NULL;
+        lp->l_last_content = lp->l_content;
+        lp->l_size = 1;
 
-    for(i = 0; i < column; ++i){
+        return;
+    }
+
+    if(column == 0){
+        struct unicode_column* temp = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+        temp->unicode = unicode;
+        temp->u_next = lp->l_content;
+        temp->u_back = NULL;
+
+        lp->l_content->u_back = temp;
+        lp->l_content = temp;
+
+        return;
+    }
+
+    for(size_t i = 0; i < column-1; ++i){
         if(unicode_it->u_next == NULL){
             insert_unicode_node(unicode_it, unicode);
-
             return;
         }
 
@@ -124,9 +146,6 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
     }
     
     insert_unicode_node(unicode_it, unicode);
-
-    if(i == 0)
-        lp->l_content = lp->l_content[0].u_back;
 }
 
 static void free_unicode(struct unicode_column* up){
@@ -143,7 +162,9 @@ void l_free(struct line* lp){
         l_free(lp->l_next);
     
 
-    free_unicode(lp->l_content);
+    if(lp->l_content != NULL){
+        free_unicode(lp->l_content);
+    }
 
     free(lp);
     lp = NULL;
