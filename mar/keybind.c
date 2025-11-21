@@ -104,30 +104,44 @@ static void update_line(unsigned char keys[MAX_KEY_SIZE], size_t index){
     print_line(current_lp, line, column);
 }
 
-static void remove_char(void){
-    if(column == 0 && line > 0){
-        struct line* lp_temp = current_lp;
-        current_lp = current_lp->l_back;
+static void fusion_with_previous_line(void){
+    struct line* lp_temp = current_lp;
+    current_lp = current_lp->l_back;
 
+    if(current_lp->l_content != NULL && lp_temp->l_content != NULL){
         current_lp->l_last_content->u_next = lp_temp->l_content;
         lp_temp->l_content->u_back = current_lp->l_last_content;
 
-        current_lp->l_last_content = lp_temp->l_last_content;
+        if(lp_temp->l_last_content != NULL)
+            current_lp->l_last_content = lp_temp->l_last_content;
 
-        if(lp_temp->l_next != NULL){
-            lp_temp->l_next->l_back = current_lp;
-            current_lp->l_next = lp_temp->l_next;
-        }else{
-            current_lp->l_next = NULL;
-        }
-
-        --line;
         column = current_lp->l_size;
-        current_lp->l_size += lp_temp->l_size;
+    }else if(current_lp->l_content == NULL && lp_temp->l_content != NULL){
+        current_lp->l_last_content = lp_temp->l_last_content;
+        current_lp->l_size = lp_temp->l_size;
+        current_lp->l_content = lp_temp->l_content;
 
-        free(lp_temp);
-        print_screen(first_lp, line, column);
+        column = 0;
+    }
 
+    if(lp_temp->l_next != NULL){
+        lp_temp->l_next->l_back = current_lp;
+        current_lp->l_next = lp_temp->l_next;
+    }else {
+        current_lp->l_next = NULL;
+    }
+
+    --line;
+    current_lp->l_size += lp_temp->l_size;
+
+    free(lp_temp);
+    print_screen(first_lp, line, column);
+
+}
+
+static void remove_char(void){
+    if(column == 0 && line > 0){
+        fusion_with_previous_line();        
         return;
     }else if(column == 0){
         return;
@@ -145,6 +159,19 @@ static void remove_char(void){
 
     struct unicode_column* temp = unicode_it->u_back;
 
+    if(temp == NULL){
+        current_lp->l_content = NULL;
+        current_lp->l_last_content = NULL;
+        current_lp->l_size = 0;
+        free(unicode_it);
+
+        column = 0;
+        erase_line();
+        print_line(current_lp, line, column);
+
+        return;
+    }
+
     if(temp->u_back == NULL){
         current_lp->l_content = current_lp->l_content->u_next;
         current_lp->l_content->u_back = NULL;
@@ -160,6 +187,57 @@ done:
     --current_lp->l_size;
     erase_line();
     print_line(current_lp, line, column);
+}
+
+static void enter(void){
+    struct unicode_column* unicode_it = current_lp->l_content;
+
+    for(size_t i = 0; i < column; ++i){
+        if(unicode_it->u_next == NULL){
+            break;
+        }
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    struct line* new_line = (struct line*)malloc(sizeof(struct line));
+
+    if(unicode_it->u_next == NULL){
+        new_line->l_content = NULL;
+        new_line->l_size = 0;
+        new_line->l_last_content = NULL;
+    }else{
+        new_line->l_content = unicode_it;
+        new_line->l_size = current_lp->l_size - column;
+        new_line->l_last_content = current_lp->l_last_content;
+
+        if(unicode_it->u_back != NULL){
+            current_lp->l_last_content = unicode_it->u_back;
+            current_lp->l_last_content->u_next = NULL;
+            current_lp->l_size = column;
+        }else{
+            current_lp->l_content = NULL;
+            current_lp->l_last_content = NULL;
+            current_lp->l_size = 0;
+        }
+
+        new_line->l_content->u_back = NULL;
+    }
+
+    new_line->l_back = current_lp;
+    new_line->l_next = current_lp->l_next;
+    
+    if(current_lp->l_next != NULL){
+        new_line->l_next->l_back = new_line;
+    }
+    
+    current_lp->l_next = new_line;
+    
+    column = 0;
+    ++line;
+    current_lp = current_lp->l_next;
+
+    print_screen(first_lp, line, column);
 }
 
 void read_key(struct line* lp){
@@ -187,6 +265,8 @@ void read_key(struct line* lp){
                 exec_function(keys, index);
             }else if(keys[0] == DELETE_KEY){
                 remove_char();
+            }else if(keys[0] == ENTER_KEY){
+                enter();
             }else{
                 update_line(keys, index);
             }
