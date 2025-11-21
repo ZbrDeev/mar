@@ -5,6 +5,7 @@
 
 #define ESCAPE 0x1b
 #define DELETE_KEY 127
+#define ENTER_KEY 13
 
 void move_cursor(size_t line, size_t column);
 

@@ -11,7 +11,7 @@ void move_cursor(size_t line, size_t column){
 
 void erase_line(void){
     putc(ESCAPE, stdout);
-    printf("[K");
+    printf("[2K");
 }
 
 void print_screen(struct line* lp, size_t line, size_t column){
@@ -36,11 +36,12 @@ void print_line(struct line* lp, size_t line, size_t column){
         if(unicode_it == NULL)
             break;
         
-
         tputc(unicode_it->unicode);
 
         unicode_it = unicode_it->u_next;
     }
+
+    putc('\n', stdout);
 
     move_cursor(line, column);
 }
