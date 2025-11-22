@@ -159,6 +159,8 @@ static void fusion_with_previous_line(void){
 
 }
 
+
+// TODO: improve this code because its a mess
 static void remove_char(void){
     if(column == 0 && line > 0){
         fusion_with_previous_line();        
@@ -178,7 +180,15 @@ static void remove_char(void){
     }
 
     struct unicode_column* temp = unicode_it->u_back;
+    
+    if(unicode_it->u_next == NULL){
+        unicode_it = unicode_it->u_back;
+        unicode_it->u_next = NULL;
 
+        temp = unicode_it->u_next;
+        goto done;
+    }
+    
     if(temp == NULL){
         current_lp->l_content = NULL;
         current_lp->l_last_content = NULL;
