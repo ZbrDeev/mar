@@ -1,4 +1,5 @@
 #include "keybind.h"
+#include "file.h"
 #include "hashmap.h"
 #include "ansi.h"
 #include "line.h"
@@ -17,6 +18,7 @@ static struct line* first_lp;
 static struct line* current_lp;
 
 static struct hashmap keybind_hashmap;
+static FILE* file;
 
 // TODO: If we have a big message with some multiple utf8 for example (hel🙂o) this will produce an error because we have a max message of 4 byte
 
@@ -44,20 +46,37 @@ static void move_cursor_down(void){
 static void move_cursor_right(void){
     if(column < current_lp->l_size){
         ++column;
-        move_cursor(line, column);    
+    }else{
+        if(current_lp->l_next != NULL){
+            column = 0;
+            ++line;
+            current_lp = current_lp->l_next;
+        }
     }
+
+    move_cursor(line, column);    
 }
 
 static void move_cursor_left(void){
     if(column >= 1){
         --column;
-        move_cursor(line, column);
     }else{
-        column = 0;
+        if(current_lp->l_back != NULL){
+            current_lp = current_lp->l_back;
+            --line;
+            column = current_lp->l_size;
+        }
     }
+
+    move_cursor(line, column);
 }
 
 static void quit_terminal(void){
+    should_close = true;
+}
+
+static void save(void){
+    save_file(file, first_lp);
     should_close = true;
 }
 
@@ -73,6 +92,7 @@ void init_keybind(void){
 
     // Terminal control
     h_insert_value(&keybind_hashmap, ESCAPE & 'Q' , &quit_terminal);
+    h_insert_value(&keybind_hashmap, ESCAPE & 'S', &save);
 }
 
 static void exec_function(unsigned char keys[MAX_KEY_SIZE], size_t index){
@@ -240,9 +260,10 @@ static void enter(void){
     print_screen(first_lp, line, column);
 }
 
-void read_key(struct line* lp){
+void read_key(struct line* lp, FILE* fp){
     first_lp = lp;
     current_lp = lp;
+    file = fp;
 
     struct pollfd key_poll;
     key_poll.fd = STDIN_FILENO;
