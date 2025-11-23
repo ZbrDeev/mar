@@ -181,7 +181,9 @@ static void remove_char(void){
     struct unicode_column* temp = unicode_it->u_back;
     
     if(unicode_it->u_next == NULL){
-        unicode_it = unicode_it->u_back;
+        if(unicode_it->u_back != NULL)
+            unicode_it = unicode_it->u_back;
+        
         unicode_it->u_next = NULL;
 
         temp = unicode_it->u_next;
