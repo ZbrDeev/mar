@@ -9,7 +9,7 @@ FILE* open_file(const char* filename){
     FILE *fp;
 
     // Open the file in read and write mode
-    if((fp = fopen(filename, "rw")) == NULL){
+    if((fp = fopen(filename, "r")) == NULL){
         printf("Invalid file path\n");
         return NULL;
     }
@@ -26,13 +26,6 @@ unsigned char* read_file(FILE* fp, size_t *size){
     }
 
     *size = ftell(fp);
-
-    if (*size < 3) {
-        printf("Empty file detected\n");
-        fclose(fp);
-        return NULL;
-    }
-
     rewind(fp);
 
     unsigned char *buffer = (unsigned char *)malloc(*size + 1);
@@ -79,6 +72,7 @@ void save_file(const char* filename, struct line* lp){
         assert(temp != NULL);
         content_result = temp;
 
+        // TODO: fix this problem: when the file has only one line this line put anyway the return
         content_result[content_size-1] = '\n';
 
         lp_it = lp_it->l_next;
@@ -93,7 +87,7 @@ void save_file(const char* filename, struct line* lp){
     
 
     FILE* file = fopen(filename, "w");
-    size_t res = fwrite(content_result, sizeof(char), content_size, file);
+    fwrite(content_result, sizeof(char), content_size-1, file);
 
     free(content_result);
     fclose(file);
