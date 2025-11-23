@@ -26,17 +26,21 @@ struct line* content_to_line(const unsigned char* content, size_t size){
             lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
             start_content = i + 1;
         } else if(content[i] == '\0'){
-            // TODO: CHECK IF THERE IS STILL VALUES
+            if(start_content < i)
+                lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
+            
             break;
         }
 
         ++i;
     }
 
-    lp_it = lp->l_next;
-    lp_it->l_back = NULL;
-    free(lp);
-    lp = NULL;
+    if(lp->l_next != NULL){
+        lp_it = lp->l_next;
+        lp_it->l_back = NULL;
+        free(lp);
+        lp = NULL;
+    }
 
     return lp_it;
 }
@@ -70,7 +74,10 @@ static void line_to_unicode(const unsigned char* content, size_t begin, size_t e
     lp->l_last_content = unicode_it;
     
     unicode_it = unicodes->u_next;
-    unicode_it->u_back = NULL;
+
+    if(unicode_it != NULL)
+        unicode_it->u_back = NULL;
+    
     free(unicodes);
     unicodes = NULL;
 
