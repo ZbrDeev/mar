@@ -18,7 +18,7 @@ static struct line* first_lp;
 static struct line* current_lp;
 
 static struct hashmap keybind_hashmap;
-static FILE* file;
+static char* filename;
 
 // TODO: If we have a big message with some multiple utf8 for example (hel🙂o) this will produce an error because we have a max message of 4 byte
 
@@ -76,8 +76,7 @@ static void quit_terminal(void){
 }
 
 static void save(void){
-    save_file(file, first_lp);
-    should_close = true;
+    save_file(filename, first_lp);
 }
 
 
@@ -270,10 +269,10 @@ static void enter(void){
     print_screen(first_lp, line, column);
 }
 
-void read_key(struct line* lp, FILE* fp){
+void read_key(struct line* lp, char* fp){
     first_lp = lp;
     current_lp = lp;
-    file = fp;
+    filename = fp;
 
     struct pollfd key_poll;
     key_poll.fd = STDIN_FILENO;
