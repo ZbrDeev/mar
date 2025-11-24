@@ -4,6 +4,7 @@
 #include "ansi.h"
 #include "line.h"
 #include "utf8.h"
+#include <assert.h>
 #include <poll.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -71,6 +72,16 @@ static void move_cursor_left(void){
     move_cursor(line, column);
 }
 
+static void move_first_column(void){
+    column = 0;
+    move_cursor(line, column);
+}
+
+static void move_last_column(void){
+    column = current_lp->l_size;
+    move_cursor(line, column);
+}
+
 static void quit_terminal(void){
     should_close = true;
 }
@@ -84,21 +95,27 @@ void init_keybind(void){
     keybind_hashmap = h_init();
 
     // Navigation control
-    h_insert_value(&keybind_hashmap, ESCAPE & '[' & 'A', &move_cursor_up);
-    h_insert_value(&keybind_hashmap, ESCAPE & '[' & 'B', &move_cursor_down);
-    h_insert_value(&keybind_hashmap, ESCAPE & '[' & 'C', &move_cursor_right);
-    h_insert_value(&keybind_hashmap, ESCAPE & '[' & 'D', &move_cursor_left);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'A', &move_cursor_up);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'B', &move_cursor_down);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'C', &move_cursor_right);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'D', &move_cursor_left);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'F', &move_last_column);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'H', &move_first_column);
 
     // Terminal control
-    h_insert_value(&keybind_hashmap, ESCAPE & 'Q' , &quit_terminal);
-    h_insert_value(&keybind_hashmap, ESCAPE & 'S', &save);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ 'Q' , &quit_terminal);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ 'q' , &quit_terminal);
+
+    // File control
+    h_insert_value(&keybind_hashmap, ESCAPE ^ 'S', &save);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ 's', &save);
 }
 
-static void exec_function(unsigned char keys[MAX_KEY_SIZE], size_t index){
+static void exec_function(unsigned char* keys, size_t index){
     unsigned key_maker = keys[0];
 
     for(size_t i = 1; i < index; ++i){
-        key_maker &= keys[i];
+        key_maker ^= keys[i];
     }
 
     struct node* np = h_get_value(&keybind_hashmap, key_maker);
@@ -108,7 +125,7 @@ static void exec_function(unsigned char keys[MAX_KEY_SIZE], size_t index){
     }
 }
 
-static void update_line(unsigned char keys[MAX_KEY_SIZE], size_t index){
+static void update_line(unsigned char* keys, size_t index){
     size_t i = 0;
     while(i < index){
         struct unicode_encoding unicode = utf8_to_unicode(keys, i, index);
@@ -280,7 +297,7 @@ void read_key(struct line* lp, char* fp){
     key_poll.fd = STDIN_FILENO;
     key_poll.events = POLLIN;
 
-    unsigned char keys[MAX_KEY_SIZE];
+    unsigned char *keys = (unsigned char*)malloc(1);
     size_t index = 0;
 
     while(!should_close) {
@@ -289,9 +306,13 @@ void read_key(struct line* lp, char* fp){
         unsigned char a;
         read(STDIN_FILENO, &a, 1);
 
-        keys[index++] = a;
+        unsigned char* temp = (unsigned char*)realloc(keys, ++index);
+        assert(temp != NULL);
+        keys = temp;
 
-        if(poll(&key_poll, 1, 1) <= 0 || index >= MAX_KEY_SIZE){
+        keys[index-1] = a;
+
+        if(poll(&key_poll, 1, 1) <= 0){
 
             if(keys[0] == ESCAPE){
                 exec_function(keys, index);
@@ -304,8 +325,11 @@ void read_key(struct line* lp, char* fp){
             }
 
             index = 0;
+            free(keys);
+            keys = (unsigned char*)malloc(1);
         }
     }
 
+    free(keys);
     h_free(&keybind_hashmap);
 }

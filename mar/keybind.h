@@ -4,8 +4,6 @@
 #include "hashmap.h"
 #include "line.h"
 
-#define MAX_KEY_SIZE 4
-
 void init_keybind(void);
 
 void read_key(struct line* lp, char* fp);
