@@ -21,7 +21,7 @@ static struct line* current_lp;
 static struct hashmap keybind_hashmap;
 static char* filename;
 
-// TODO: If we have a big message with some multiple utf8 for example (hel🙂o) this will produce an error because we have a max message of 4 byte
+static void remove_front_char(void);
 
 static void move_cursor_up(void){
     if(line >= 1){
@@ -109,6 +109,9 @@ void init_keybind(void){
     // File control
     h_insert_value(&keybind_hashmap, ESCAPE ^ 'S', &save);
     h_insert_value(&keybind_hashmap, ESCAPE ^ 's', &save);
+
+    // Text control
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x33 ^ 0x7e, &remove_front_char);
 }
 
 static void exec_function(unsigned char* keys, size_t index){
@@ -167,19 +170,61 @@ static void fusion_with_previous_line(void){
         current_lp->l_next = NULL;
     }
 
-    --line;
     current_lp->l_size += lp_temp->l_size;
 
     free(lp_temp);
-    print_screen(first_lp, line, column);
-
 }
 
 
+static void remove_front_char(void){
+    if(column == current_lp->l_size && current_lp->l_next != NULL){
+        current_lp = current_lp->l_next;
+        fusion_with_previous_line();
+        print_screen(first_lp, line, column);
+        return;
+    }else if(column == current_lp->l_size){
+        return;
+    }
+
+    struct unicode_column* unicode_it = current_lp->l_content;
+
+    for(size_t i = 0; i < column; ++i){
+        if(unicode_it->u_next != NULL)
+            break;
+        
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    struct unicode_column* temp = unicode_it->u_next;
+    
+    if(unicode_it->u_back == NULL){
+        temp = unicode_it;
+        current_lp->l_content = unicode_it->u_next;
+
+        if(current_lp->l_content != NULL)
+            current_lp->l_content->u_back = NULL;
+
+        goto done;
+    }
+
+    unicode_it->u_next = temp->u_next;
+    if(temp->u_next != NULL)
+        temp->u_back = unicode_it;
+
+done:
+    free(temp);
+    --current_lp->l_size;
+    erase_line();
+    print_line(current_lp, line, column);
+}
+
 // TODO: improve this code because its a mess
-static void remove_char(void){
+static void remove_back_char(void){
     if(column == 0 && line > 0){
-        fusion_with_previous_line();        
+        fusion_with_previous_line();
+        --line;
+        print_screen(first_lp, line, column);
         return;
     }else if(column == 0){
         return;
@@ -188,9 +233,9 @@ static void remove_char(void){
     struct unicode_column* unicode_it = current_lp->l_content;
     
     for(size_t i = 0; i < column; ++i){
-        if(unicode_it->u_next == NULL){
+        if(unicode_it->u_next == NULL)
             break;
-        }
+        
 
         unicode_it = unicode_it->u_next;
     }
@@ -317,7 +362,7 @@ void read_key(struct line* lp, char* fp){
             if(keys[0] == ESCAPE){
                 exec_function(keys, index);
             }else if(keys[0] == DELETE_KEY){
-                remove_char();
+                remove_back_char();
             }else if(keys[0] == ENTER_KEY){
                 enter();
             }else{
