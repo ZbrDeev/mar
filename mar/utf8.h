@@ -1,17 +1,18 @@
 #ifndef UTF8_H
 #define UTF8_H
 
+#include <stdint.h>
 #include <stddef.h>
 
 #define MAX_UTF8_SIZE 4
 
 struct __attribute__((packed)) unicode_encoding {
-    size_t bytes_size;
+    uint8_t bytes_size;
     unsigned result;
 };
 
 struct __attribute__((packed)) utf8_encoding {
-    size_t bytes_size;
+    uint8_t bytes_size;
     unsigned char result[MAX_UTF8_SIZE];
 };
 

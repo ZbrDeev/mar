@@ -6,7 +6,7 @@ struct unicode_encoding utf8_to_unicode(const unsigned char* line, size_t index,
     unicode_result.result = line[index];
 
     unsigned char c = line[index];
-    size_t bytes = 1;
+    uint8_t bytes = 1;
     unsigned result = 0;
 
     if(c < 0xc0){
