@@ -286,16 +286,16 @@ static void enter(void){
     struct unicode_column* unicode_it = current_lp->l_content;
 
     for(size_t i = 0; i < column; ++i){
-        if(unicode_it->u_next == NULL){
+        if(unicode_it->u_next == NULL)
             break;
-        }
+        
 
         unicode_it = unicode_it->u_next;
     }
 
     struct line* new_line = (struct line*)malloc(sizeof(struct line));
 
-    if(unicode_it->u_next == NULL){
+    if(unicode_it == NULL || unicode_it->u_next == NULL){
         new_line->l_content = NULL;
         new_line->l_size = 0;
         new_line->l_last_content = NULL;
