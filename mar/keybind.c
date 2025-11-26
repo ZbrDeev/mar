@@ -22,7 +22,7 @@ static void remove_front_char(void);
 static void move_cursor_up(void){
     if(current_wp->position.line >= 1){
         --current_wp->position.line;
-        move_cursor(current_wp->position.line, current_wp->position.column);        
+        move_cursor(current_wp->position);
 
         if(current_wp->current_lp->l_back != NULL)
             current_wp->current_lp = current_wp->current_lp->l_back;
@@ -36,7 +36,7 @@ static void move_cursor_down(void){
     if(current_wp->current_lp->l_next != NULL){
         current_wp->current_lp = current_wp->current_lp->l_next;
         ++current_wp->position.line;
-        move_cursor(current_wp->position.line, current_wp->position.column);
+        move_cursor(current_wp->position);
     }
 }
 
@@ -51,7 +51,7 @@ static void move_cursor_right(void){
         }
     }
 
-    move_cursor(current_wp->position.line, current_wp->position.column);    
+    move_cursor(current_wp->position);    
 }
 
 static void move_cursor_left(void){
@@ -65,17 +65,17 @@ static void move_cursor_left(void){
         }
     }
 
-    move_cursor(current_wp->position.line, current_wp->position.column);
+    move_cursor(current_wp->position);
 }
 
 static void move_first_column(void){
     current_wp->position.column = 0;
-    move_cursor(current_wp->position.line, current_wp->position.column);
+    move_cursor(current_wp->position);
 }
 
 static void move_last_column(void){
     current_wp->position.column = current_wp->current_lp->l_size;
-    move_cursor(current_wp->position.line, current_wp->position.column);
+    move_cursor(current_wp->position);
 }
 
 static void quit_terminal(void){
@@ -95,6 +95,7 @@ void init_keybind(void){
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'B', &move_cursor_down);
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'C', &move_cursor_right);
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'D', &move_cursor_left);
+
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'F', &move_last_column);
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'H', &move_first_column);
 
@@ -136,7 +137,7 @@ static void update_line(unsigned char* keys, size_t index){
     }
 
     erase_line();
-    print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
+    print_line(current_wp->current_lp, current_wp->position);
 }
 
 static void fusion_with_previous_line(void){
@@ -176,7 +177,7 @@ static void remove_front_char(void){
     if(current_wp->position.column == current_wp->current_lp->l_size && current_wp->current_lp->l_next != NULL){
         current_wp->current_lp = current_wp->current_lp->l_next;
         fusion_with_previous_line();
-        print_screen(current_wp->first_lp, current_wp->position.line, current_wp->position.column);
+        print_screen(current_wp->first_lp, current_wp->position);
         return;
     }else if(current_wp->position.column == current_wp->current_lp->l_size){
         return;
@@ -212,7 +213,7 @@ done:
     free(temp);
     --current_wp->current_lp->l_size;
     erase_line();
-    print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
+    print_line(current_wp->current_lp, current_wp->position);
 }
 
 // TODO: improve this code because its a mess
@@ -220,7 +221,7 @@ static void remove_back_char(void){
     if(current_wp->position.column == 0 && current_wp->position.line > 0){
         fusion_with_previous_line();
         --current_wp->position.line;
-        print_screen(current_wp->first_lp, current_wp->position.line, current_wp->position.column);
+        print_screen(current_wp->first_lp, current_wp->position);
         return;
     }else if(current_wp->position.column == 0){
         return;
@@ -256,7 +257,7 @@ static void remove_back_char(void){
 
         current_wp->position.column = 0;
         erase_line();
-        print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
+        print_line(current_wp->current_lp, current_wp->position);
 
         return;
     }
@@ -275,7 +276,7 @@ done:
     --current_wp->position.column;
     --current_wp->current_lp->l_size;
     erase_line();
-    print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
+    print_line(current_wp->current_lp, current_wp->position);
 }
 
 static void enter(void){
@@ -326,7 +327,7 @@ static void enter(void){
     ++current_wp->position.line;
     current_wp->current_lp = current_wp->current_lp->l_next;
 
-    print_screen(current_wp->first_lp, current_wp->position.line, current_wp->position.column);
+    print_screen(current_wp->first_lp, current_wp->position);
 }
 
 void read_key(struct window* wp){

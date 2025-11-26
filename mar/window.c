@@ -20,9 +20,10 @@ struct window* alloc_window(void){
 }
 
 void render_window(struct window* wp){
+    struct line_position temp_position = {.line = 0, .column = 0};
     clear_screen();
-    move_cursor(0, 0);
-    print_screen(wp->first_lp, 0, 0);
+    move_cursor(temp_position);
+    print_screen(wp->first_lp, temp_position);
 }
 
 static void free_window_node(struct window* wp){
