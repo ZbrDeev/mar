@@ -121,6 +121,29 @@ static void move_word_forward(void){
     move_cursor(current_wp->position);
 }
 
+static void reset_position(void){
+    current_wp->position.line = 0;
+    current_wp->position.column = 0;
+    current_wp->current_lp = current_wp->first_lp;
+
+    move_cursor(current_wp->position);
+}
+
+static void move_end_of_line(void){
+    size_t index = 0;
+    struct line* temp_lp = current_wp->first_lp;
+
+    while(temp_lp->l_next != NULL){
+        ++index;
+        temp_lp = temp_lp->l_next;
+    }
+
+    current_wp->position.line = index;
+    current_wp->position.column = temp_lp->l_size;
+    current_wp->current_lp = temp_lp;
+    move_cursor(current_wp->position);
+}
+
 static void quit_terminal(void){
     should_close = true;
 }
@@ -142,8 +165,11 @@ void init_keybind(void){
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'F', &move_last_column);
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'H', &move_first_column);
 
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3B ^ 0x35 ^ 0x44, &move_word_backward);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3B ^ 0x35 ^ 0x43, &move_word_forward);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x44, &move_word_backward);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x43, &move_word_forward);
+
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x48 , &reset_position);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x46 , &move_end_of_line);
 
     // Terminal control
     h_insert_value(&keybind_hashmap, ESCAPE ^ 'Q' , &quit_terminal);
