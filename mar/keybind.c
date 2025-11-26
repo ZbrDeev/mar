@@ -22,12 +22,17 @@ static void remove_front_char(void);
 static void move_cursor_up(void){
     if(current_wp->position.line >= 1){
         --current_wp->position.line;
-        move_cursor(current_wp->position);
 
         if(current_wp->current_lp->l_back != NULL)
             current_wp->current_lp = current_wp->current_lp->l_back;
+
+        if(current_wp->position.column > current_wp->current_lp->l_size)
+            current_wp->position.column = current_wp->current_lp->l_size;
+
+        move_cursor(current_wp->position);
     }else{
         current_wp->position.line = 0;
+        current_wp->position.column = 0;
         current_wp->current_lp = current_wp->first_lp;
     }
 }
@@ -36,6 +41,10 @@ static void move_cursor_down(void){
     if(current_wp->current_lp->l_next != NULL){
         current_wp->current_lp = current_wp->current_lp->l_next;
         ++current_wp->position.line;
+
+        if(current_wp->position.column > current_wp->current_lp->l_size)
+            current_wp->position.column = current_wp->current_lp->l_size;
+
         move_cursor(current_wp->position);
     }
 }
@@ -78,6 +87,40 @@ static void move_last_column(void){
     move_cursor(current_wp->position);
 }
 
+static void move_word_backward(void){
+    struct unicode_column* unicode_it = current_wp->current_lp->l_content;
+    
+    size_t current_column = current_wp->position.column;
+    for(size_t i = 0; i < current_column; ++i){
+        if(unicode_it->unicode.result == 0x20){
+            current_wp->position.column = i;
+        }else if(unicode_it == NULL){
+            break;
+        }
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    move_cursor(current_wp->position);
+}
+
+static void move_word_forward(void){
+    struct unicode_column* unicode_it = current_wp->current_lp->l_content;
+    
+    for(size_t i = 0; i < current_wp->current_lp->l_size; ++i){
+        if(i > current_wp->position.column && unicode_it->unicode.result == 0x20){
+            current_wp->position.column = i;
+            break;
+        }else if(unicode_it == NULL){
+            break;
+        }
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    move_cursor(current_wp->position);
+}
+
 static void quit_terminal(void){
     should_close = true;
 }
@@ -98,6 +141,9 @@ void init_keybind(void){
 
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'F', &move_last_column);
     h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'H', &move_first_column);
+
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3B ^ 0x35 ^ 0x44, &move_word_backward);
+    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3B ^ 0x35 ^ 0x43, &move_word_forward);
 
     // Terminal control
     h_insert_value(&keybind_hashmap, ESCAPE ^ 'Q' , &quit_terminal);
