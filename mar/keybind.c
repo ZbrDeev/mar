@@ -12,74 +12,70 @@
 
 static bool should_close = false;
 
-static size_t line = 0;
-static size_t column = 0;
-
-static struct line* first_lp;
-static struct line* current_lp;
+static struct window* first_wp;
+static struct window* current_wp;
 
 static struct hashmap keybind_hashmap;
-static char* filename;
 
 static void remove_front_char(void);
 
 static void move_cursor_up(void){
-    if(line >= 1){
-        --line;
-        move_cursor(line, column);        
+    if(current_wp->position.line >= 1){
+        --current_wp->position.line;
+        move_cursor(current_wp->position.line, current_wp->position.column);        
 
-        if(current_lp->l_back != NULL)
-            current_lp = current_lp->l_back;
+        if(current_wp->current_lp->l_back != NULL)
+            current_wp->current_lp = current_wp->current_lp->l_back;
     }else{
-        line = 0;
-        current_lp = first_lp;
+        current_wp->position.line = 0;
+        current_wp->current_lp = current_wp->first_lp;
     }
 }
 
 static void move_cursor_down(void){
-    if(current_lp->l_next != NULL){
-        current_lp = current_lp->l_next;
-        ++line;
-        move_cursor(line, column);
+    if(current_wp->current_lp->l_next != NULL){
+        current_wp->current_lp = current_wp->current_lp->l_next;
+        ++current_wp->position.line;
+        move_cursor(current_wp->position.line, current_wp->position.column);
     }
 }
 
 static void move_cursor_right(void){
-    if(column < current_lp->l_size){
-        ++column;
+    if(current_wp->position.column < current_wp->current_lp->l_size){
+        ++current_wp->position.column;
     }else{
-        if(current_lp->l_next != NULL){
-            column = 0;
-            ++line;
-            current_lp = current_lp->l_next;
+        if(current_wp->current_lp->l_next != NULL){
+            current_wp->position.column = 0;
+            ++current_wp->position.line;
+            current_wp->current_lp = current_wp->current_lp->l_next;
         }
     }
 
-    move_cursor(line, column);    
+    move_cursor(current_wp->position.line, current_wp->position.column);    
 }
 
 static void move_cursor_left(void){
-    if(column >= 1){
-        --column;
+    if(current_wp->position.column >= 1){
+        --current_wp->position.column;
     }else{
-        if(current_lp->l_back != NULL){
-            current_lp = current_lp->l_back;
-            --line;
-            column = current_lp->l_size;
+        if(current_wp->current_lp->l_back != NULL){
+            current_wp->current_lp = current_wp->current_lp->l_back;
+            --current_wp->position.line;
+            current_wp->position.column = current_wp->current_lp->l_size;
         }
     }
 
-    move_cursor(line, column);
+    move_cursor(current_wp->position.line, current_wp->position.column);
 }
 
 static void move_first_column(void){
-    column = 0;
-    move_cursor(line, column);
+    current_wp->position.column = 0;
+    move_cursor(current_wp->position.line, current_wp->position.column);
 }
 
 static void move_last_column(void){
-    column = current_lp->l_size;
-    move_cursor(line, column);
+    current_wp->position.column = current_wp->current_lp->l_size;
+    move_cursor(current_wp->position.line, current_wp->position.column);
 }
 
 static void quit_terminal(void){
@@ -87,7 +83,7 @@ static void quit_terminal(void){
 }
 
 static void save(void){
-    save_file(filename, first_lp);
+    save_file(current_wp->filename, current_wp->first_lp);
 }
 
 
@@ -135,60 +131,60 @@ static void update_line(unsigned char* keys, size_t index){
 
         i += unicode.bytes_size;
 
-        insert_char_in_line(current_lp, unicode, column);
-        ++column;
+        insert_char_in_line(current_wp->current_lp, unicode, current_wp->position.column);
+        ++current_wp->position.column;
     }
 
     erase_line();
-    print_line(current_lp, line, column);
+    print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
 }
 
 static void fusion_with_previous_line(void){
-    struct line* lp_temp = current_lp;
-    current_lp = current_lp->l_back;
+    struct line* lp_temp = current_wp->current_lp;
+    current_wp->current_lp = current_wp->current_lp->l_back;
 
-    if(current_lp->l_content != NULL && lp_temp->l_content != NULL){
-        current_lp->l_last_content->u_next = lp_temp->l_content;
-        lp_temp->l_content->u_back = current_lp->l_last_content;
+    if(current_wp->current_lp->l_content != NULL && lp_temp->l_content != NULL){
+        current_wp->current_lp->l_last_content->u_next = lp_temp->l_content;
+        lp_temp->l_content->u_back = current_wp->current_lp->l_last_content;
 
         if(lp_temp->l_last_content != NULL)
-            current_lp->l_last_content = lp_temp->l_last_content;
+            current_wp->current_lp->l_last_content = lp_temp->l_last_content;
 
-        column = current_lp->l_size;
-    }else if(current_lp->l_content == NULL && lp_temp->l_content != NULL){
-        current_lp->l_last_content = lp_temp->l_last_content;
-        current_lp->l_size = lp_temp->l_size;
-        current_lp->l_content = lp_temp->l_content;
+        current_wp->position.column = current_wp->current_lp->l_size;
+    }else if(current_wp->current_lp->l_content == NULL && lp_temp->l_content != NULL){
+        current_wp->current_lp->l_last_content = lp_temp->l_last_content;
+        current_wp->current_lp->l_size = lp_temp->l_size;
+        current_wp->current_lp->l_content = lp_temp->l_content;
 
-        column = 0;
+        current_wp->position.column = 0;
     }
 
     if(lp_temp->l_next != NULL){
-        lp_temp->l_next->l_back = current_lp;
-        current_lp->l_next = lp_temp->l_next;
+        lp_temp->l_next->l_back = current_wp->current_lp;
+        current_wp->current_lp->l_next = lp_temp->l_next;
     }else {
-        current_lp->l_next = NULL;
+        current_wp->current_lp->l_next = NULL;
     }
 
-    current_lp->l_size += lp_temp->l_size;
+    current_wp->current_lp->l_size += lp_temp->l_size;
 
     free(lp_temp);
 }
 
 
 static void remove_front_char(void){
-    if(column == current_lp->l_size && current_lp->l_next != NULL){
-        current_lp = current_lp->l_next;
+    if(current_wp->position.column == current_wp->current_lp->l_size && current_wp->current_lp->l_next != NULL){
+        current_wp->current_lp = current_wp->current_lp->l_next;
         fusion_with_previous_line();
-        print_screen(first_lp, line, column);
+        print_screen(current_wp->first_lp, current_wp->position.line, current_wp->position.column);
         return;
-    }else if(column == current_lp->l_size){
+    }else if(current_wp->position.column == current_wp->current_lp->l_size){
         return;
     }
 
-    struct unicode_column* unicode_it = current_lp->l_content;
+    struct unicode_column* unicode_it = current_wp->current_lp->l_content;
 
-    for(size_t i = 0; i < column; ++i){
+    for(size_t i = 0; i < current_wp->position.column; ++i){
         if(unicode_it->u_next != NULL)
             break;
         
@@ -200,10 +196,10 @@ static void remove_front_char(void){
     
     if(unicode_it->u_back == NULL){
         temp = unicode_it;
-        current_lp->l_content = unicode_it->u_next;
+        current_wp->current_lp->l_content = unicode_it->u_next;
 
-        if(current_lp->l_content != NULL)
-            current_lp->l_content->u_back = NULL;
+        if(current_wp->current_lp->l_content != NULL)
+            current_wp->current_lp->l_content->u_back = NULL;
 
         goto done;
     }
@@ -214,25 +210,25 @@ static void remove_front_char(void){
 
 done:
     free(temp);
-    --current_lp->l_size;
+    --current_wp->current_lp->l_size;
     erase_line();
-    print_line(current_lp, line, column);
+    print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
 }
 
 // TODO: improve this code because its a mess
 static void remove_back_char(void){
-    if(column == 0 && line > 0){
+    if(current_wp->position.column == 0 && current_wp->position.line > 0){
         fusion_with_previous_line();
-        --line;
-        print_screen(first_lp, line, column);
+        --current_wp->position.line;
+        print_screen(current_wp->first_lp, current_wp->position.line, current_wp->position.column);
         return;
-    }else if(column == 0){
+    }else if(current_wp->position.column == 0){
         return;
     }
 
-    struct unicode_column* unicode_it = current_lp->l_content;
+    struct unicode_column* unicode_it = current_wp->current_lp->l_content;
     
-    for(size_t i = 0; i < column; ++i){
+    for(size_t i = 0; i < current_wp->position.column; ++i){
         if(unicode_it->u_next == NULL)
             break;
         
@@ -253,21 +249,21 @@ static void remove_back_char(void){
     }
     
     if(temp == NULL){
-        current_lp->l_content = NULL;
-        current_lp->l_last_content = NULL;
-        current_lp->l_size = 0;
+        current_wp->current_lp->l_content = NULL;
+        current_wp->current_lp->l_last_content = NULL;
+        current_wp->current_lp->l_size = 0;
         free(unicode_it);
 
-        column = 0;
+        current_wp->position.column = 0;
         erase_line();
-        print_line(current_lp, line, column);
+        print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
 
         return;
     }
 
     if(temp->u_back == NULL){
-        current_lp->l_content = current_lp->l_content->u_next;
-        current_lp->l_content->u_back = NULL;
+        current_wp->current_lp->l_content = current_wp->current_lp->l_content->u_next;
+        current_wp->current_lp->l_content->u_back = NULL;
         goto done;
     }
     
@@ -276,16 +272,16 @@ static void remove_back_char(void){
     
 done:
     free(temp);
-    --column;
-    --current_lp->l_size;
+    --current_wp->position.column;
+    --current_wp->current_lp->l_size;
     erase_line();
-    print_line(current_lp, line, column);
+    print_line(current_wp->current_lp, current_wp->position.line, current_wp->position.column);
 }
 
 static void enter(void){
-    struct unicode_column* unicode_it = current_lp->l_content;
+    struct unicode_column* unicode_it = current_wp->current_lp->l_content;
 
-    for(size_t i = 0; i < column; ++i){
+    for(size_t i = 0; i < current_wp->position.column; ++i){
         if(unicode_it->u_next == NULL)
             break;
         
@@ -301,42 +297,40 @@ static void enter(void){
         new_line->l_last_content = NULL;
     }else{
         new_line->l_content = unicode_it;
-        new_line->l_size = current_lp->l_size - column;
-        new_line->l_last_content = current_lp->l_last_content;
+        new_line->l_size = current_wp->current_lp->l_size - current_wp->position.column;
+        new_line->l_last_content = current_wp->current_lp->l_last_content;
 
         if(unicode_it->u_back != NULL){
-            current_lp->l_last_content = unicode_it->u_back;
-            current_lp->l_last_content->u_next = NULL;
-            current_lp->l_size = column;
+            current_wp->current_lp->l_last_content = unicode_it->u_back;
+            current_wp->current_lp->l_last_content->u_next = NULL;
+            current_wp->current_lp->l_size = current_wp->position.column;
         }else{
-            current_lp->l_content = NULL;
-            current_lp->l_last_content = NULL;
-            current_lp->l_size = 0;
+            current_wp->current_lp->l_content = NULL;
+            current_wp->current_lp->l_last_content = NULL;
+            current_wp->current_lp->l_size = 0;
         }
 
         new_line->l_content->u_back = NULL;
     }
 
-    new_line->l_back = current_lp;
-    new_line->l_next = current_lp->l_next;
+    new_line->l_back = current_wp->current_lp;
+    new_line->l_next = current_wp->current_lp->l_next;
     
-    if(current_lp->l_next != NULL){
+    if(current_wp->current_lp->l_next != NULL){
         new_line->l_next->l_back = new_line;
     }
     
-    current_lp->l_next = new_line;
+    current_wp->current_lp->l_next = new_line;
     
-    column = 0;
-    ++line;
-    current_lp = current_lp->l_next;
+    current_wp->position.column = 0;
+    ++current_wp->position.line;
+    current_wp->current_lp = current_wp->current_lp->l_next;
 
-    print_screen(first_lp, line, column);
+    print_screen(current_wp->first_lp, current_wp->position.line, current_wp->position.column);
 }
 
-void read_key(struct line* lp, char* fp){
-    first_lp = lp;
-    current_lp = lp;
-    filename = fp;
+void read_key(struct window* wp){
+    current_wp = first_wp = wp;
 
     struct pollfd key_poll;
     key_poll.fd = STDIN_FILENO;

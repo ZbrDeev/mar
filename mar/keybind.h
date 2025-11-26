@@ -3,9 +3,10 @@
 
 #include "hashmap.h"
 #include "line.h"
+#include "window.h"
 
 void init_keybind(void);
 
-void read_key(struct line* lp, char* fp);
+void read_key(struct window* wp);
 
 #endif // KEYBIND_H
