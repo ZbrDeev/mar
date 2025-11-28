@@ -11,7 +11,7 @@ void init_term(void){
 
     newterm = oldterm;
 
-    newterm.c_iflag &= ~(IGNBRK | BRKINT | INPCK | IGNPAR | ICRNL | INPCK | IGNCR);
+    newterm.c_iflag &= ~(IGNBRK | BRKINT | INPCK | IGNPAR | ICRNL | INPCK | IGNCR | IXON | IXOFF);
     newterm.c_oflag &= ~(OPOST | OLCUC | ONLCR | OCRNL | ONLRET | OFILL);
     newterm.c_lflag &= ~(ICANON | ECHO | ECHOK | ECHOE | ECHONL | NOFLSH | ISIG);
 
