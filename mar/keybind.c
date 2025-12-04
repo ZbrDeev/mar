@@ -3,7 +3,9 @@
 #include "hashmap.h"
 #include "ansi.h"
 #include "line.h"
+#include "system.h"
 #include "utf8.h"
+#include "window.h"
 #include <assert.h>
 #include <poll.h>
 #include <stdlib.h>
@@ -144,6 +146,84 @@ static void move_end_of_line(void){
     move_cursor(current_wp->position);
 }
 
+static void select_left(void){
+    struct selected_text* selected = &current_wp->selected;
+
+    if(!selected->is_selected){
+        selected->end = current_wp->position.column;
+        selected->is_selected = true;
+        selected->line = current_wp->position.line;
+        selected->last_selected = left;
+    }
+
+    move_cursor_left();
+
+    if(selected->line != current_wp->position.line){
+        selected->is_selected = false;
+        return;
+    }
+    
+    if(selected->start == selected->end){
+        selected->is_selected = false;
+    }else{
+        if(selected->last_selected != left)
+            selected->end = current_wp->position.column;
+        else
+            selected->start = current_wp->position.column;
+        
+    }
+    
+    print_screen(current_wp);
+}
+
+static void select_right(void){
+    struct selected_text* selected = &current_wp->selected;
+
+    if(!selected->is_selected){
+        selected->start = current_wp->position.column;
+        selected->is_selected = true;
+        selected->line = current_wp->position.line;
+        selected->last_selected = right;
+    }
+
+    move_cursor_right();
+
+    if(selected->line != current_wp->position.line){
+        selected->is_selected = false;
+        return;
+    }
+    
+    if(selected->start == selected->end){
+        selected->is_selected = false;
+    }else{
+        if(selected->last_selected != right)
+            selected->start = current_wp->position.column;
+        else
+            selected->end = current_wp->position.column;
+        
+    }
+
+    
+    print_screen(current_wp);
+}
+
+static void copy_text(void){
+    if(!current_wp->selected.is_selected){
+        current_wp->selected.is_selected = true;
+
+        current_wp->selected.line = current_wp->position.line;
+        current_wp->selected.start = 0;
+        current_wp->selected.end = current_wp->current_lp->l_size;
+    }
+
+    size_t size = 0;
+    char* selected_char = return_copied_char(current_wp->current_lp, current_wp->selected.start, current_wp->selected.end, &size);
+
+    copy_to_clipboard(selected_char, size);
+
+    free(selected_char);
+}
+
 static void quit_terminal(void){
     should_close = true;
 }
@@ -157,44 +237,58 @@ void init_keybind(void){
     keybind_hashmap = h_init();
 
     // Navigation control
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'A', &move_cursor_up);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'B', &move_cursor_down);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'C', &move_cursor_right);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'D', &move_cursor_left);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x41, &move_cursor_up);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x42, &move_cursor_down);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x43, &move_cursor_right);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x44, &move_cursor_left);
 
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'F', &move_last_column);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 'H', &move_first_column);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x46, &move_last_column);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x48, &move_first_column);
 
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x44, &move_word_backward);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x43, &move_word_forward);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x43, &move_word_forward);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x44, &move_word_backward);
 
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x48 , &reset_position);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x31 ^ 0x3b ^ 0x35 ^ 0x46 , &move_end_of_line);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x48 , &reset_position);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x46 , &move_end_of_line);
+
+    // Select control
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x43, &select_right);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x44, &select_left);
 
     // Terminal control
-    h_insert_value(&keybind_hashmap, ESCAPE ^ 'Q' , &quit_terminal);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ 'q' , &quit_terminal);
+    h_insert_value(&keybind_hashmap, CTRL('q') , &quit_terminal);
 
     // File control
-    h_insert_value(&keybind_hashmap, ESCAPE ^ 'S', &save);
-    h_insert_value(&keybind_hashmap, ESCAPE ^ 's', &save);
+    h_insert_value(&keybind_hashmap, CTRL('s'), &save);
 
     // Text control
-    h_insert_value(&keybind_hashmap, ESCAPE ^ '[' ^ 0x33 ^ 0x7e, &remove_front_char);
+    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x33 + 0x7e, &remove_front_char);
+
+    h_insert_value(&keybind_hashmap, CTRL('c'), &copy_text);
+}
+
+static void check_if_still_select(unsigned key){
+    if(key == ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x43 || key == ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x44 || key == CTRL('c'))
+        return;
+    
+
+    current_wp->selected.is_selected = false;
+    print_screen(current_wp);
 }
 
 static void exec_function(unsigned char* keys, size_t index){
-    unsigned key_maker = keys[0];
+    unsigned key_maker = 0;
 
-    for(size_t i = 1; i < index; ++i){
-        key_maker ^= keys[i];
-    }
+    for(size_t i = 0; i < index; ++i)
+        key_maker += keys[i];
+    
 
+    check_if_still_select(key_maker);
     struct node* np = h_get_value(&keybind_hashmap, key_maker);
 
-    if(np != NULL && np->function != NULL){
+    if(np != NULL && np->function != NULL)
         np->function();
-    }
+    
 }
 
 static void update_line(unsigned char* keys, size_t index){
@@ -208,8 +302,7 @@ static void update_line(unsigned char* keys, size_t index){
         ++current_wp->position.column;
     }
 
-    erase_line();
-    print_line(current_wp->current_lp, current_wp->position);
+    print_screen(current_wp);
 }
 
 static void fusion_with_previous_line(void){
@@ -249,7 +342,7 @@ static void remove_front_char(void){
     if(current_wp->position.column == current_wp->current_lp->l_size && current_wp->current_lp->l_next != NULL){
         current_wp->current_lp = current_wp->current_lp->l_next;
         fusion_with_previous_line();
-        print_screen(current_wp->first_lp, current_wp->position);
+        print_screen(current_wp);
         return;
     }else if(current_wp->position.column == current_wp->current_lp->l_size){
         return;
@@ -284,8 +377,7 @@ static void remove_front_char(void){
 done:
     free(temp);
     --current_wp->current_lp->l_size;
-    erase_line();
-    print_line(current_wp->current_lp, current_wp->position);
+    print_screen(current_wp);
 }
 
 // TODO: improve this code because its a mess
@@ -293,7 +385,7 @@ static void remove_back_char(void){
     if(current_wp->position.column == 0 && current_wp->position.line > 0){
         fusion_with_previous_line();
         --current_wp->position.line;
-        print_screen(current_wp->first_lp, current_wp->position);
+        print_screen(current_wp);
         return;
     }else if(current_wp->position.column == 0){
         return;
@@ -328,8 +420,7 @@ static void remove_back_char(void){
         free(unicode_it);
 
         current_wp->position.column = 0;
-        erase_line();
-        print_line(current_wp->current_lp, current_wp->position);
+        print_screen(current_wp);
 
         return;
     }
@@ -347,8 +438,7 @@ done:
     free(temp);
     --current_wp->position.column;
     --current_wp->current_lp->l_size;
-    erase_line();
-    print_line(current_wp->current_lp, current_wp->position);
+    print_screen(current_wp);
 }
 
 static void enter(void){
@@ -399,7 +489,7 @@ static void enter(void){
     ++current_wp->position.line;
     current_wp->current_lp = current_wp->current_lp->l_next;
 
-    print_screen(current_wp->first_lp, current_wp->position);
+    print_screen(current_wp);
 }
 
 void read_key(struct window* wp){
@@ -425,13 +515,12 @@ void read_key(struct window* wp){
         keys[index-1] = a;
 
         if(poll(&key_poll, 1, 1) <= 0){
-
-            if(keys[0] == ESCAPE){
-                exec_function(keys, index);
-            }else if(keys[0] == DELETE_KEY){
+            if(keys[0] == DELETE_KEY){
                 remove_back_char();
             }else if(keys[0] == ENTER_KEY){
                 enter();
+            }else if(keys[0] == ESCAPE || keys[0] <= 26){
+                exec_function(keys, index);
             }else{
                 update_line(keys, index);
             }

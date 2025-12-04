@@ -25,6 +25,8 @@ struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, str
 
 void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_t column);
 
+char* return_copied_char(struct line* lp, size_t start, size_t end, size_t* returned_size);
+
 void l_free(struct line* lp);
 
 #endif // LINE_H

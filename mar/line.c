@@ -155,6 +155,46 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
     insert_unicode_node(unicode_it, unicode);
 }
 
+char* return_copied_char(struct line* lp, size_t start, size_t end, size_t* returned_size){
+    size_t selected_size = end-start;
+    char* selected_char = (char*)malloc(1);
+    size_t content_size = 0;
+
+    struct unicode_column* unicode_it = lp->l_content;
+
+    for(size_t i = 0; i < start; ++i){
+        if(unicode_it->u_next == NULL)
+            break;
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    for(size_t i = start; i < end; ++i){
+        if(unicode_it == NULL)
+            break;
+        
+
+        struct utf8_encoding utf8 = unicode_to_utf8(unicode_it->unicode);
+
+        content_size += utf8.bytes_size;
+
+        char* temp = (char*)realloc(selected_char, content_size);
+        assert(temp != NULL);
+        selected_char = temp;
+
+        for(size_t j = 0; j < utf8.bytes_size; ++j){
+            size_t index = content_size - utf8.bytes_size + j;
+            selected_char[index] = utf8.result[j];
+        }
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    *returned_size = selected_size;
+
+    return selected_char;
+}
+
 static void free_unicode(struct unicode_column* up){
     if(up->u_next != NULL)
         free_unicode(up->u_next);

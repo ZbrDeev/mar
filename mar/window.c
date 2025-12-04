@@ -12,18 +12,23 @@ struct window* alloc_window(void){
     wp->w_next = NULL;
     wp->w_back = NULL;
     wp->filename = NULL;
+    
     wp->line_size = 0;
     wp->position.line = 0;
     wp->position.column = 0;
+
+    wp->selected.is_selected = false;
+    wp->selected.start = 0;
+    wp->selected.end = 0;
+    wp->selected.line = 0;
     
     return wp;
 }
 
 void render_window(struct window* wp){
-    struct line_position temp_position = {.line = 0, .column = 0};
     clear_screen();
-    move_cursor(temp_position);
-    print_screen(wp->first_lp, temp_position);
+    move_cursor(wp->position);
+    print_screen(wp);
 }
 
 static void free_window_node(struct window* wp){
