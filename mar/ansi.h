@@ -10,15 +10,30 @@
 #define DELETE_KEY 127
 #define ENTER_KEY 13
 
-void move_cursor(struct line_position position);
+#define MAX_LINE 65
+#define MAX_COL 100
+
+#define MAX_TEXT_LINE 60
+
+void move_cursor(struct window* wp);
+
+void temp_move_cursor(struct line_position position);
+
+void erase_line(void);
 
 void set_color(int color);
 
 void reset_color(void);
 
+void render_statbar(struct window* wp);
+
+void render_status_bar(struct window* wp);
+
+void render_message(struct window* wp, const char* message, bool is_input);
+
 void print_screen(struct window* wp);
 
-void print_line(struct line* lp, struct line_position position, struct selected_text selected);
+void print_line(struct window *wp);
 
 void clear_screen(void);
 
