@@ -8,7 +8,7 @@
 struct line* content_to_line(const unsigned char* content, size_t size){
     struct line* lp; 
 
-    if((lp = (struct line*)malloc(sizeof(struct line))) == NULL){
+    if((lp = malloc(sizeof(struct line))) == NULL){
         printf("Failed to alloc line\n");
         return NULL;
     }
@@ -46,7 +46,7 @@ struct line* content_to_line(const unsigned char* content, size_t size){
 }
 
 static void line_to_unicode(const unsigned char* content, size_t begin, size_t end, struct line* lp){
-    struct unicode_column* unicodes = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+    struct unicode_column* unicodes = malloc(sizeof(struct unicode_column));
     assert(unicodes != NULL);
 
     unicodes->u_back = NULL;
@@ -64,7 +64,7 @@ static void line_to_unicode(const unsigned char* content, size_t begin, size_t e
 
         struct unicode_column* temp = unicode_it;
 
-        unicode_it = unicode_it->u_next = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+        unicode_it = unicode_it->u_next = malloc(sizeof(struct unicode_column));
         unicode_it->unicode = result;
 
         unicode_it->u_back = temp;
@@ -87,7 +87,7 @@ static void line_to_unicode(const unsigned char* content, size_t begin, size_t e
 struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, struct line* lp_back){
     struct line* lp;
 
-    if((lp = (struct line*)malloc(sizeof(struct line))) == NULL){
+    if((lp = malloc(sizeof(struct line))) == NULL){
         printf("Failed to alloc line struct\n");
         return NULL;
     }
@@ -101,7 +101,7 @@ struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, str
 }
 
 static void insert_unicode_node(struct unicode_column* up, struct unicode_encoding unicode){
-    struct unicode_column* temp = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+    struct unicode_column* temp = malloc(sizeof(struct unicode_column));
 
     temp->unicode = unicode;
     temp->u_next = NULL;
@@ -121,7 +121,7 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
     struct unicode_column* unicode_it = lp->l_content;
 
     if(unicode_it == NULL){
-        lp->l_content = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+        lp->l_content = malloc(sizeof(struct unicode_column));
         lp->l_content->unicode = unicode;
         lp->l_content->u_back = NULL;
         lp->l_content->u_next = NULL;
@@ -132,7 +132,7 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
     }
 
     if(column == 0){
-        struct unicode_column* temp = (struct unicode_column*)malloc(sizeof(struct unicode_column));
+        struct unicode_column* temp = malloc(sizeof(struct unicode_column));
         temp->unicode = unicode;
         temp->u_next = lp->l_content;
         temp->u_back = NULL;
@@ -157,7 +157,7 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
 
 char* return_copied_char(struct line* lp, size_t start, size_t end, size_t* returned_size){
     size_t selected_size = end-start;
-    char* selected_char = (char*)malloc(1);
+    char* selected_char = malloc(1);
     size_t content_size = 0;
 
     struct unicode_column* unicode_it = lp->l_content;
@@ -178,7 +178,7 @@ char* return_copied_char(struct line* lp, size_t start, size_t end, size_t* retu
 
         content_size += utf8.bytes_size;
 
-        char* temp = (char*)realloc(selected_char, content_size);
+        char* temp = realloc(selected_char, content_size);
         assert(temp != NULL);
         selected_char = temp;
 

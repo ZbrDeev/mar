@@ -55,7 +55,7 @@ void save_file(const char* filename, struct line* lp){
 
             content_size += utf8.bytes_size;
 
-            char* temp = (char*)realloc(content_result, content_size);
+            char* temp = realloc(content_result, content_size);
             assert(temp != NULL);
             content_result = temp;
 
@@ -68,7 +68,7 @@ void save_file(const char* filename, struct line* lp){
         }
 
         ++content_size;
-        char* temp = (char*)realloc(content_result, content_size);
+        char* temp = realloc(content_result, content_size);
         assert(temp != NULL);
         content_result = temp;
 
@@ -79,7 +79,7 @@ void save_file(const char* filename, struct line* lp){
     }
 
     ++content_size;
-    char* temp = (char*)realloc(content_result, content_size);
+    char* temp = realloc(content_result, content_size);
     assert(temp != NULL);
     content_result = temp;
 

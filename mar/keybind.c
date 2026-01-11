@@ -510,7 +510,7 @@ void read_key(struct window* wp){
         unsigned char a;
         read(STDIN_FILENO, &a, 1);
 
-        unsigned char* temp = (unsigned char*)realloc(keys, ++index);
+        unsigned char* temp = realloc(keys, ++index);
         assert(temp != NULL);
         keys = temp;
 
