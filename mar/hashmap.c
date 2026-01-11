@@ -29,7 +29,7 @@ struct node* h_get_value(struct hashmap* hp, unsigned key){
 void h_insert_value(struct hashmap* hp, unsigned key, hashmap_function_t* function){
     unsigned key_hashed = CALC_KEY_INDEX(key);
 
-    struct node* new_node = (struct node*)malloc(sizeof(struct node));
+    struct node* new_node = malloc(sizeof(struct node));
     new_node->key = key;
     new_node->function = function;
     new_node->next = NULL;
