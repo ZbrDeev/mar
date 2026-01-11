@@ -10,10 +10,10 @@ FILE* open_file(const char* filename){
 
     // Open the file in read and write mode
     if((fp = fopen(filename, "r")) == NULL){
-        printf("Invalid file path\n");
-        return NULL;
+        fp = fopen(filename, "wr");
     }
 
+    // Here we don't mind if the value is NULL or file descriptor
     return fp;
 }
 
@@ -28,7 +28,7 @@ unsigned char* read_file(FILE* fp, size_t *size){
     *size = ftell(fp);
     rewind(fp);
 
-    unsigned char *buffer = (unsigned char *)malloc(*size + 1);
+    unsigned char *buffer = malloc(*size + 1);
     buffer[*size] = '\0';
 
     fread(buffer, *size, 1, fp);
@@ -38,7 +38,7 @@ unsigned char* read_file(FILE* fp, size_t *size){
 }
 
 void save_file(const char* filename, struct line* lp){
-    char* content_result = (char*)malloc(1);
+    char* content_result = malloc(1);
 
     size_t content_size = 0;
     struct line* lp_it = lp;
