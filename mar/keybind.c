@@ -31,7 +31,10 @@ static void move_cursor_up(void){
         if(current_wp->position.column > current_wp->current_lp->l_size)
             current_wp->position.column = current_wp->current_lp->l_size;
 
-        move_cursor(current_wp->position);
+        if(current_wp->y_cursor > 0){
+            --current_wp->y_cursor;
+            move_cursor(current_wp);
+        }
     }else{
         current_wp->position.line = 0;
         current_wp->position.column = 0;
@@ -47,7 +50,11 @@ static void move_cursor_down(void){
         if(current_wp->position.column > current_wp->current_lp->l_size)
             current_wp->position.column = current_wp->current_lp->l_size;
 
-        move_cursor(current_wp->position);
+
+        if(current_wp->y_cursor < MAX_TEXT_LINE){
+            ++current_wp->y_cursor;
+            move_cursor(current_wp);
+        }
     }
 }
 
@@ -62,7 +69,7 @@ static void move_cursor_right(void){
         }
     }
 
-    move_cursor(current_wp->position);    
+    move_cursor(current_wp);
 }
 
 static void move_cursor_left(void){
@@ -76,17 +83,17 @@ static void move_cursor_left(void){
         }
     }
 
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void move_first_column(void){
     current_wp->position.column = 0;
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void move_last_column(void){
     current_wp->position.column = current_wp->current_lp->l_size;
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void move_word_backward(void){
@@ -94,16 +101,16 @@ static void move_word_backward(void){
     
     size_t current_column = current_wp->position.column;
     for(size_t i = 0; i < current_column; ++i){
-        if(unicode_it->unicode.result == 0x20){
+        if(unicode_it->unicode.result == 0x20)
             current_wp->position.column = i;
-        }else if(unicode_it == NULL){
+        else if(unicode_it == NULL)
             break;
-        }
+        
 
         unicode_it = unicode_it->u_next;
     }
 
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void move_word_forward(void){
@@ -120,7 +127,7 @@ static void move_word_forward(void){
         unicode_it = unicode_it->u_next;
     }
 
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void reset_position(void){
@@ -128,7 +135,7 @@ static void reset_position(void){
     current_wp->position.column = 0;
     current_wp->current_lp = current_wp->first_lp;
 
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void move_end_of_line(void){
@@ -143,7 +150,7 @@ static void move_end_of_line(void){
     current_wp->position.line = index;
     current_wp->position.column = temp_lp->l_size;
     current_wp->current_lp = temp_lp;
-    move_cursor(current_wp->position);
+    move_cursor(current_wp);
 }
 
 static void select_left(void){
@@ -173,7 +180,7 @@ static void select_left(void){
         
     }
     
-    print_screen(current_wp);
+    print_line(current_wp);
 }
 
 static void select_right(void){
@@ -203,8 +210,7 @@ static void select_right(void){
         
     }
 
-    
-    print_screen(current_wp);
+    print_line(current_wp);
 }
 
 static void copy_text(void){
@@ -230,6 +236,7 @@ static void quit_terminal(void){
 
 static void save(void){
     save_file(current_wp->filename, current_wp->first_lp);
+    current_wp->status_bar_text = "File saved successfully";
 }
 
 
@@ -271,9 +278,7 @@ static void check_if_still_select(unsigned key){
     if(key == ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x43 || key == ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x44 || key == CTRL('c'))
         return;
     
-
     current_wp->selected.is_selected = false;
-    print_screen(current_wp);
 }
 
 static void exec_function(unsigned char* keys, size_t index){
@@ -289,6 +294,7 @@ static void exec_function(unsigned char* keys, size_t index){
     if(np != NULL && np->function != NULL)
         np->function();
     
+    print_screen(current_wp);
 }
 
 static void update_line(unsigned char* keys, size_t index){
@@ -302,7 +308,8 @@ static void update_line(unsigned char* keys, size_t index){
         ++current_wp->position.column;
     }
 
-    print_screen(current_wp);
+    erase_line();
+    print_line(current_wp);
 }
 
 static void fusion_with_previous_line(void){
@@ -342,7 +349,7 @@ static void remove_front_char(void){
     if(current_wp->position.column == current_wp->current_lp->l_size && current_wp->current_lp->l_next != NULL){
         current_wp->current_lp = current_wp->current_lp->l_next;
         fusion_with_previous_line();
-        print_screen(current_wp);
+        print_line(current_wp);
         return;
     }else if(current_wp->position.column == current_wp->current_lp->l_size){
         return;
@@ -377,7 +384,7 @@ static void remove_front_char(void){
 done:
     free(temp);
     --current_wp->current_lp->l_size;
-    print_screen(current_wp);
+    print_line(current_wp);
 }
 
 // TODO: improve this code because its a mess
@@ -385,7 +392,6 @@ static void remove_back_char(void){
     if(current_wp->position.column == 0 && current_wp->position.line > 0){
         fusion_with_previous_line();
         --current_wp->position.line;
-        print_screen(current_wp);
         return;
     }else if(current_wp->position.column == 0){
         return;
@@ -420,7 +426,6 @@ static void remove_back_char(void){
         free(unicode_it);
 
         current_wp->position.column = 0;
-        print_screen(current_wp);
 
         return;
     }
@@ -438,7 +443,7 @@ done:
     free(temp);
     --current_wp->position.column;
     --current_wp->current_lp->l_size;
-    print_screen(current_wp);
+    print_line(current_wp);
 }
 
 static void enter(void){
@@ -448,11 +453,10 @@ static void enter(void){
         if(unicode_it->u_next == NULL)
             break;
         
-
         unicode_it = unicode_it->u_next;
     }
 
-    struct line* new_line = (struct line*)malloc(sizeof(struct line));
+    struct line* new_line = malloc(sizeof(struct line));
 
     if(unicode_it == NULL || unicode_it->u_next == NULL){
         new_line->l_content = NULL;
@@ -479,17 +483,15 @@ static void enter(void){
     new_line->l_back = current_wp->current_lp;
     new_line->l_next = current_wp->current_lp->l_next;
     
-    if(current_wp->current_lp->l_next != NULL){
+    if(current_wp->current_lp->l_next != NULL)
         new_line->l_next->l_back = new_line;
-    }
+    
     
     current_wp->current_lp->l_next = new_line;
     
     current_wp->position.column = 0;
     ++current_wp->position.line;
     current_wp->current_lp = current_wp->current_lp->l_next;
-
-    print_screen(current_wp);
 }
 
 void read_key(struct window* wp){
@@ -499,7 +501,7 @@ void read_key(struct window* wp){
     key_poll.fd = STDIN_FILENO;
     key_poll.events = POLLIN;
 
-    unsigned char *keys = (unsigned char*)malloc(1);
+    unsigned char *keys = malloc(1);
     size_t index = 0;
 
     while(!should_close) {
@@ -515,19 +517,19 @@ void read_key(struct window* wp){
         keys[index-1] = a;
 
         if(poll(&key_poll, 1, 1) <= 0){
-            if(keys[0] == DELETE_KEY){
+            if(keys[0] == DELETE_KEY)
                 remove_back_char();
-            }else if(keys[0] == ENTER_KEY){
+            else if(keys[0] == ENTER_KEY)
                 enter();
-            }else if(keys[0] == ESCAPE || keys[0] <= 26){
+            else if(keys[0] == ESCAPE || keys[0] <= 26)
                 exec_function(keys, index);
-            }else{
+            else
                 update_line(keys, index);
-            }
+            
 
             index = 0;
             free(keys);
-            keys = (unsigned char*)malloc(1);
+            keys = malloc(1);
         }
     }
 
