@@ -4,9 +4,6 @@
 #include "utf8.h"
 #include <termios.h>
 
-#define MAX_LINE 100
-#define MAX_COL 100
-
 void init_term(void);
 
 void close_term(void);
