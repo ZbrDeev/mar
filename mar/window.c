@@ -6,16 +6,18 @@
 struct window* alloc_window(void){
     struct window* wp;
 
-    if((wp = (struct window*)malloc(sizeof(struct window))) == NULL)
+    if((wp = malloc(sizeof(struct window))) == NULL)
         return NULL;
     
     wp->w_next = NULL;
     wp->w_back = NULL;
     wp->filename = NULL;
-    
+    wp->status_bar_text = "";
+
     wp->line_size = 0;
     wp->position.line = 0;
     wp->position.column = 0;
+    wp->y_cursor = 0;
 
     wp->selected.is_selected = false;
     wp->selected.start = 0;
@@ -27,7 +29,7 @@ struct window* alloc_window(void){
 
 void render_window(struct window* wp){
     clear_screen();
-    move_cursor(wp->position);
+    move_cursor(wp);
     print_screen(wp);
 }
 

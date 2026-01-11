@@ -28,9 +28,15 @@ struct window {
     char* filename;
     struct line* first_lp;
     struct line* current_lp;
+
     struct line_position position;
     struct selected_text selected;
+    size_t y_cursor;
+
     size_t line_size;
+
+    char* status_bar_text;
+
     struct window* w_next;
     struct window* w_back;
 };
