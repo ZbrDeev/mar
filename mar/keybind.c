@@ -358,42 +358,36 @@ static void remove_front_char(void){
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
 
     for(size_t i = 0; i < current_wp->position.column; ++i){
-        if(unicode_it->u_next != NULL)
+        if(unicode_it->u_next == NULL)
             break;
         
-
         unicode_it = unicode_it->u_next;
     }
 
-    struct unicode_column* temp = unicode_it->u_next;
-    
+    struct unicode_column* temp_front_unicode = unicode_it->u_next;
+
     if(unicode_it->u_back == NULL){
-        temp = unicode_it;
-        current_wp->current_lp->l_content = unicode_it->u_next;
-
-        if(current_wp->current_lp->l_content != NULL)
-            current_wp->current_lp->l_content->u_back = NULL;
-
-        goto done;
+        current_wp->current_lp->l_content = temp_front_unicode;
+    }else{
+        struct unicode_column* temp_back_unicode = unicode_it->u_back;
+        temp_back_unicode->u_next = temp_front_unicode;
+        temp_front_unicode->u_back = temp_back_unicode;
     }
 
-    unicode_it->u_next = temp->u_next;
-    if(temp->u_next != NULL)
-        temp->u_back = unicode_it;
-
-done:
-    free(temp);
+    free(unicode_it);
     --current_wp->current_lp->l_size;
     print_line(current_wp);
 }
 
 // TODO: improve this code because its a mess
 static void remove_back_char(void){
-    if(current_wp->position.column == 0 && current_wp->position.line > 0){
-        fusion_with_previous_line();
-        --current_wp->position.line;
-        return;
-    }else if(current_wp->position.column == 0){
+    if(current_wp->position.column == 0){
+        if(current_wp->position.line > 0){
+            fusion_with_previous_line();
+            --current_wp->position.line;
+            print_screen(current_wp);
+        }
+
         return;
     }
 
@@ -403,7 +397,6 @@ static void remove_back_char(void){
         if(unicode_it->u_next == NULL)
             break;
         
-
         unicode_it = unicode_it->u_next;
     }
 
@@ -492,6 +485,8 @@ static void enter(void){
     current_wp->position.column = 0;
     ++current_wp->position.line;
     current_wp->current_lp = current_wp->current_lp->l_next;
+
+    print_screen(current_wp);
 }
 
 void read_key(struct window* wp){
