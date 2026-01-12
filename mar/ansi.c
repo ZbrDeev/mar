@@ -155,6 +155,18 @@ void print_screen(struct window* wp){
     render_status_bar(wp);
 }
 
+void clear_screen(void){
+    putc(ESCAPE, stdout);
+    putc(CSI, stdout);
+    printf("2J");
+}
+
+static void clear_line(void){
+    putc(ESCAPE, stdout);
+    putc(CSI, stdout);
+    printf("2K");
+}
+
 void print_line(struct window* wp){
     struct line_position temp_position = {.line = wp->y_cursor, .column = wp->position.column};
 
@@ -162,6 +174,7 @@ void print_line(struct window* wp){
         temp_position.line = wp->position.line;
     
     move_cursor_from_line(temp_position.line, 0);
+    clear_line();
 
     struct unicode_column* unicode_it = wp->current_lp->l_content;
 
@@ -174,7 +187,6 @@ void print_line(struct window* wp){
         else
             reset_color();
         
-        
         tputc(unicode_it->unicode);
 
         unicode_it = unicode_it->u_next;
@@ -184,8 +196,4 @@ void print_line(struct window* wp){
     temp_move_cursor(temp_position);
 }
 
-void clear_screen(void){
-    putc(ESCAPE, stdout);
-    putc(CSI, stdout);
-    printf("2J");
-}
+
