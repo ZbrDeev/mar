@@ -220,9 +220,9 @@ static void copy_text(void){
     char* selected_char = return_copied_char(current_wp->current_lp, current_wp->selected.start, current_wp->selected.end, &size);
 
     copy_to_clipboard(selected_char, size);
-    current_wp->selected.is_selected = false;
 
     free(selected_char);
+    current_wp->status_bar_text = "Text copied successfully";
 }
 
 static void quit_terminal(void){
@@ -238,23 +238,31 @@ void init_keybind(void){
     keybind_hashmap = h_init();
 
     // Navigation control
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x41, &move_cursor_up);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x42, &move_cursor_down);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x43, &move_cursor_right);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x44, &move_cursor_left);
+    
+    
+    
+    
+    h_insert_value(&keybind_hashmap, UP, &move_cursor_up);
+    h_insert_value(&keybind_hashmap, DOWN, &move_cursor_down);
+    h_insert_value(&keybind_hashmap, RIGHT, &move_cursor_right);
+    h_insert_value(&keybind_hashmap, LEFT, &move_cursor_left);
 
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x46, &move_last_column);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x48, &move_first_column);
+    
+    
+    h_insert_value(&keybind_hashmap, FIN, &move_last_column);
+    h_insert_value(&keybind_hashmap, ORIG, &move_first_column);
 
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x43, &move_word_forward);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x44, &move_word_backward);
+    
+    h_insert_value(&keybind_hashmap, CTRL_RIGHT, &move_word_forward);
+    h_insert_value(&keybind_hashmap, CTRL_LEFT, &move_word_backward);
 
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x48 , &reset_position);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x46 , &move_end_of_line);
+    
+    h_insert_value(&keybind_hashmap,  CTRL_ORIG, &reset_position);
+    h_insert_value(&keybind_hashmap, CTRL_FIN, &move_end_of_line);
 
     // Select control
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x43, &select_right);
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x44, &select_left);
+    h_insert_value(&keybind_hashmap, SHIFT_RIGHT, &select_right);
+    h_insert_value(&keybind_hashmap, SHIFT_LEFT, &select_left);
 
     // Terminal control
     h_insert_value(&keybind_hashmap, CTRL('q') , &quit_terminal);
@@ -263,13 +271,13 @@ void init_keybind(void){
     h_insert_value(&keybind_hashmap, CTRL('s'), &save);
 
     // Text control
-    h_insert_value(&keybind_hashmap, ESCAPE + CSI + 0x33 + 0x7e, &remove_front_char);
+    h_insert_value(&keybind_hashmap, SUPPR, &remove_front_char);
 
     h_insert_value(&keybind_hashmap, CTRL('c'), &copy_text);
 }
 
 static void check_if_still_select(unsigned key){
-    if(key == ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x43 || key == ESCAPE + CSI + 0x31 + 0x3b + 0x32 + 0x44 || key == CTRL('c'))
+    if(key == SHIFT_RIGHT || key == SHIFT_LEFT || key == CTRL('c'))
         return;
     
     current_wp->selected.is_selected = false;
