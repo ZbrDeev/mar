@@ -83,7 +83,7 @@ void render_status_bar(struct window *wp){
     if(strlen(wp->status_bar_text) <= 0)
         return;
 
-    struct line_position new_position = {.line = 60, .column = 0};
+    struct line_position new_position = {.line = MAX_TEXT_LINE+4, .column = 0};
 
     temp_move_cursor(new_position);
 
@@ -103,21 +103,20 @@ void render_message(struct window* wp, const char* message, bool is_input){
         move_cursor(wp);
 }
 
-static void temp_print_line(struct line* lp, size_t y_cursor, struct line_position position, struct selected_text selected){
-    move_cursor_from_line(y_cursor, 0);
+static void temp_print_line(struct line* lp, size_t y_cursor, size_t current_y_cursor, struct line_position position, struct selected_text selected, size_t test){
     struct line_position temp_position = {.line = y_cursor, .column = position.column};
-
     struct unicode_column* unicode_it = lp->l_content;
+    
+    move_cursor_from_line(y_cursor, 0);
 
     for(size_t i = 0; i < lp->l_size; ++i){
         if(unicode_it == NULL)
             break;
 
-        if(selected.is_selected && position.line == selected.line && (i >= selected.start && i < selected.end))
+        if(selected.is_selected && y_cursor == current_y_cursor && (i >= selected.start && i < selected.end))
             set_color(100);
         else
             reset_color();
-        
         
         tputc(unicode_it->unicode);
 
@@ -129,13 +128,13 @@ static void temp_print_line(struct line* lp, size_t y_cursor, struct line_positi
 }
 
 void print_screen(struct window* wp){
-    clear_screen();
     struct line* lp_it = wp->first_lp;
     struct line_position temp_position = {.line = 0, .column = 0};
-    temp_move_cursor(temp_position);
-
     size_t index = 0;
     size_t calc_y_offset = 0;
+
+    clear_screen();
+    temp_move_cursor(temp_position);
 
     if(wp->position.line > MAX_TEXT_LINE)
         calc_y_offset = wp->position.line - wp->y_cursor;
@@ -144,7 +143,7 @@ void print_screen(struct window* wp){
         lp_it = lp_it->l_next;
 
     while(lp_it != NULL && index <= MAX_TEXT_LINE){
-        temp_print_line(lp_it, temp_position.line, wp->position, wp->selected);
+        temp_print_line(lp_it, temp_position.line, wp->y_cursor, wp->position, wp->selected, calc_y_offset);
         ++temp_position.line;
         ++index;
 
@@ -169,14 +168,13 @@ static void clear_line(void){
 
 void print_line(struct window* wp){
     struct line_position temp_position = {.line = wp->y_cursor, .column = wp->position.column};
+    struct unicode_column* unicode_it = wp->current_lp->l_content;
 
     if(wp->position.line <= MAX_TEXT_LINE)
         temp_position.line = wp->position.line;
     
     move_cursor_from_line(temp_position.line, 0);
     clear_line();
-
-    struct unicode_column* unicode_it = wp->current_lp->l_content;
 
     for(size_t i = 0; i < wp->current_lp->l_size; ++i){
         if(unicode_it == NULL)

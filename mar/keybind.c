@@ -35,6 +35,9 @@ static void move_cursor_up(void){
             --current_wp->y_cursor;
             move_cursor(current_wp);
         }
+
+        if(current_wp->position.line == MAX_TEXT_LINE)
+            current_wp->y_cursor = current_wp->position.line;
     }else{
         current_wp->position.line = 0;
         current_wp->position.column = 0;
@@ -61,12 +64,10 @@ static void move_cursor_down(void){
 static void move_cursor_right(void){
     if(current_wp->position.column < current_wp->current_lp->l_size){
         ++current_wp->position.column;
-    }else{
-        if(current_wp->current_lp->l_next != NULL){
-            current_wp->position.column = 0;
-            ++current_wp->position.line;
-            current_wp->current_lp = current_wp->current_lp->l_next;
-        }
+    }else if(current_wp->current_lp->l_next != NULL){
+        current_wp->position.column = 0;
+        ++current_wp->position.line;
+        current_wp->current_lp = current_wp->current_lp->l_next;
     }
 
     move_cursor(current_wp);
@@ -75,12 +76,12 @@ static void move_cursor_right(void){
 static void move_cursor_left(void){
     if(current_wp->position.column >= 1){
         --current_wp->position.column;
+    }else if(current_wp->current_lp->l_back != NULL){
+        current_wp->current_lp = current_wp->current_lp->l_back;
+        --current_wp->position.line;
+        current_wp->position.column = current_wp->current_lp->l_size;
     }else{
-        if(current_wp->current_lp->l_back != NULL){
-            current_wp->current_lp = current_wp->current_lp->l_back;
-            --current_wp->position.line;
-            current_wp->position.column = current_wp->current_lp->l_size;
-        }
+        current_wp->position.column = 0;
     }
 
     move_cursor(current_wp);
@@ -98,8 +99,8 @@ static void move_last_column(void){
 
 static void move_word_backward(void){
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
-    
     size_t current_column = current_wp->position.column;
+
     for(size_t i = 0; i < current_column; ++i){
         if(unicode_it->unicode.result == 0x20)
             current_wp->position.column = i;
@@ -133,21 +134,20 @@ static void move_word_forward(void){
 static void reset_position(void){
     current_wp->position.line = 0;
     current_wp->position.column = 0;
+    current_wp->y_cursor = 0;
     current_wp->current_lp = current_wp->first_lp;
 
     move_cursor(current_wp);
 }
 
 static void move_end_of_line(void){
-    size_t index = 0;
-    struct line* temp_lp = current_wp->first_lp;
+    struct line* temp_lp = current_wp->current_lp;
 
     while(temp_lp->l_next != NULL){
-        ++index;
+        ++current_wp->position.line;
         temp_lp = temp_lp->l_next;
     }
 
-    current_wp->position.line = index;
     current_wp->position.column = temp_lp->l_size;
     current_wp->current_lp = temp_lp;
     move_cursor(current_wp);
@@ -177,10 +177,7 @@ static void select_left(void){
             selected->end = current_wp->position.column;
         else
             selected->start = current_wp->position.column;
-        
     }
-    
-    print_line(current_wp);
 }
 
 static void select_right(void){
@@ -209,14 +206,11 @@ static void select_right(void){
             selected->end = current_wp->position.column;
         
     }
-
-    print_line(current_wp);
 }
 
 static void copy_text(void){
     if(!current_wp->selected.is_selected){
         current_wp->selected.is_selected = true;
-
         current_wp->selected.line = current_wp->position.line;
         current_wp->selected.start = 0;
         current_wp->selected.end = current_wp->current_lp->l_size;
@@ -226,6 +220,7 @@ static void copy_text(void){
     char* selected_char = return_copied_char(current_wp->current_lp, current_wp->selected.start, current_wp->selected.end, &size);
 
     copy_to_clipboard(selected_char, size);
+    current_wp->selected.is_selected = false;
 
     free(selected_char);
 }
@@ -238,7 +233,6 @@ static void save(void){
     save_file(current_wp->filename, current_wp->first_lp);
     current_wp->status_bar_text = "File saved successfully";
 }
-
 
 void init_keybind(void){
     keybind_hashmap = h_init();
@@ -379,8 +373,52 @@ static void remove_front_char(void){
     print_line(current_wp);
 }
 
+static void remove_selected_char(void){
+    size_t selected_char_count = current_wp->selected.end - current_wp->selected.start;
+    struct unicode_column* unicode_it = current_wp->current_lp->l_content;
+    struct unicode_column* unicode_before_selected = NULL;
+
+    for(size_t i = 0; i < current_wp->selected.start; ++i){
+        if(unicode_it->u_next == NULL)
+            break;
+
+        unicode_it = unicode_it->u_next;
+    }
+
+    unicode_before_selected = unicode_it->u_back;
+
+    for(size_t i = 0; i < selected_char_count; ++i){
+        if(unicode_it == NULL)
+            break;
+
+        struct unicode_column* temp = unicode_it;
+        unicode_it = unicode_it->u_next;
+
+        free(temp);
+        temp = NULL;
+    }
+
+    if(unicode_before_selected == NULL){
+        current_wp->current_lp->l_content = unicode_it;
+    }else{
+        unicode_before_selected->u_next = unicode_it;
+        unicode_it->u_back = unicode_before_selected;
+    }
+
+    current_wp->current_lp->l_size -= selected_char_count;
+    current_wp->position.column = current_wp->selected.start;
+    current_wp->selected.is_selected = false;
+}
+
 // TODO: improve this code because its a mess
 static void remove_back_char(void){
+    if(current_wp->selected.is_selected){
+        remove_selected_char();
+        print_screen(current_wp);
+
+        return;
+    }
+
     if(current_wp->position.column == 0){
         if(current_wp->position.line > 0){
             fusion_with_previous_line();
