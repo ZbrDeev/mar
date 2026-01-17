@@ -103,7 +103,7 @@ void render_message(struct window* wp, const char* message, bool is_input){
         move_cursor(wp);
 }
 
-static void temp_print_line(struct line* lp, size_t y_cursor, size_t current_y_cursor, struct line_position position, struct selected_text selected, size_t test){
+static void temp_print_line(struct line* lp, size_t y_cursor, size_t current_y_cursor, struct line_position position, struct selected_text selected){
     struct line_position temp_position = {.line = y_cursor, .column = position.column};
     struct unicode_column* unicode_it = lp->l_content;
     
@@ -143,7 +143,7 @@ void print_screen(struct window* wp){
         lp_it = lp_it->l_next;
 
     while(lp_it != NULL && index <= MAX_TEXT_LINE){
-        temp_print_line(lp_it, temp_position.line, wp->y_cursor, wp->position, wp->selected, calc_y_offset);
+        temp_print_line(lp_it, temp_position.line, wp->y_cursor, wp->position, wp->selected);
         ++temp_position.line;
         ++index;
 
