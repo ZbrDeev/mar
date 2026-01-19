@@ -12,53 +12,51 @@
 #include <unistd.h>
 #include <stdbool.h>
 
+// If true we should end the process
 static bool should_close = false;
 
 static struct window* first_wp;
 static struct window* current_wp;
 
+// This is a hashmap for binding function to touch
 static struct hashmap keybind_hashmap;
 
+// Remove the front char when we press SUPPR touch
 static void remove_front_char(void);
 
 static void move_cursor_up(void){
-    if(current_wp->position.line >= 1){
-        --current_wp->position.line;
+    if(current_wp->position.line == 0)
+        return;
 
-        if(current_wp->current_lp->l_back != NULL)
-            current_wp->current_lp = current_wp->current_lp->l_back;
+    current_wp->current_lp = current_wp->current_lp->l_back;
+    --current_wp->position.line;
 
-        if(current_wp->position.column > current_wp->current_lp->l_size)
-            current_wp->position.column = current_wp->current_lp->l_size;
+    if(current_wp->position.column > current_wp->current_lp->l_size)
+        current_wp->position.column = current_wp->current_lp->l_size;
 
-        if(current_wp->y_cursor > 0){
-            --current_wp->y_cursor;
-            move_cursor(current_wp);
-        }
+    if(current_wp->y_cursor > 0)
+        --current_wp->y_cursor;
 
-        if(current_wp->position.line == MAX_TEXT_LINE)
-            current_wp->y_cursor = current_wp->position.line;
-    }else{
-        current_wp->position.line = 0;
-        current_wp->position.column = 0;
-        current_wp->current_lp = current_wp->first_lp;
-    }
+    if(current_wp->position.line == MAX_TEXT_LINE)
+        current_wp->y_cursor = current_wp->position.line;
+
+    move_cursor(current_wp);
 }
 
 static void move_cursor_down(void){
-    if(current_wp->current_lp->l_next != NULL){
-        current_wp->current_lp = current_wp->current_lp->l_next;
-        ++current_wp->position.line;
+    if(current_wp->current_lp->l_next == NULL)
+        return;
 
-        if(current_wp->position.column > current_wp->current_lp->l_size)
-            current_wp->position.column = current_wp->current_lp->l_size;
+    current_wp->current_lp = current_wp->current_lp->l_next;
+    ++current_wp->position.line;
 
+    if(current_wp->position.column > current_wp->current_lp->l_size)
+        current_wp->position.column = current_wp->current_lp->l_size;
 
-        if(current_wp->y_cursor < MAX_TEXT_LINE){
-            ++current_wp->y_cursor;
-            move_cursor(current_wp);
-        }
-    }
+    if(current_wp->y_cursor < MAX_TEXT_LINE)
+        ++current_wp->y_cursor;
+
+    move_cursor(current_wp);
 }
 
 static void move_cursor_right(void){
@@ -80,8 +78,6 @@ static void move_cursor_left(void){
         current_wp->current_lp = current_wp->current_lp->l_back;
         --current_wp->position.line;
         current_wp->position.column = current_wp->current_lp->l_size;
-    }else{
-        current_wp->position.column = 0;
     }
 
     move_cursor(current_wp);
@@ -101,12 +97,13 @@ static void move_word_backward(void){
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
     size_t current_column = current_wp->position.column;
 
+    // Here we check every space and take the last space we found
     for(size_t i = 0; i < current_column; ++i){
-        if(unicode_it->unicode.result == 0x20)
-            current_wp->position.column = i;
-        else if(unicode_it == NULL)
+        if(unicode_it == NULL)
             break;
-        
+
+        if(unicode_it->unicode.result == SPACE)
+            current_wp->position.column = i;
 
         unicode_it = unicode_it->u_next;
     }
@@ -117,11 +114,13 @@ static void move_word_backward(void){
 static void move_word_forward(void){
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
     
+    // Here we check the first space and add to the position
     for(size_t i = 0; i < current_wp->current_lp->l_size; ++i){
-        if(i > current_wp->position.column && unicode_it->unicode.result == 0x20){
-            current_wp->position.column = i;
+        if(unicode_it == NULL)
             break;
-        }else if(unicode_it == NULL){
+
+        if(i > current_wp->position.column && unicode_it->unicode.result == SPACE){
+            current_wp->position.column = i;
             break;
         }
 
@@ -150,6 +149,7 @@ static void move_end_of_line(void){
 
     current_wp->position.column = temp_lp->l_size;
     current_wp->current_lp = temp_lp;
+    current_wp->y_cursor = MAX_TEXT_LINE;
     move_cursor(current_wp);
 }
 
@@ -173,10 +173,10 @@ static void select_left(void){
     if(selected->start == selected->end){
         selected->is_selected = false;
     }else{
-        if(selected->last_selected != left)
-            selected->end = current_wp->position.column;
-        else
+        if(selected->last_selected == left)
             selected->start = current_wp->position.column;
+        else
+            selected->end = current_wp->position.column;
     }
 }
 
@@ -200,24 +200,23 @@ static void select_right(void){
     if(selected->start == selected->end){
         selected->is_selected = false;
     }else{
-        if(selected->last_selected != right)
-            selected->start = current_wp->position.column;
-        else
+        if(selected->last_selected == right)
             selected->end = current_wp->position.column;
-        
+        else
+            selected->start = current_wp->position.column;
     }
 }
 
 static void copy_text(void){
+    size_t size = 0;
+    char* selected_char = return_copied_char(current_wp->current_lp, current_wp->selected.start, current_wp->selected.end, &size);
+
     if(!current_wp->selected.is_selected){
         current_wp->selected.is_selected = true;
         current_wp->selected.line = current_wp->position.line;
         current_wp->selected.start = 0;
         current_wp->selected.end = current_wp->current_lp->l_size;
     }
-
-    size_t size = 0;
-    char* selected_char = return_copied_char(current_wp->current_lp, current_wp->selected.start, current_wp->selected.end, &size);
 
     copy_to_clipboard(selected_char, size);
 
@@ -238,25 +237,17 @@ void init_keybind(void){
     keybind_hashmap = h_init();
 
     // Navigation control
-    
-    
-    
-    
     h_insert_value(&keybind_hashmap, UP, &move_cursor_up);
     h_insert_value(&keybind_hashmap, DOWN, &move_cursor_down);
     h_insert_value(&keybind_hashmap, RIGHT, &move_cursor_right);
     h_insert_value(&keybind_hashmap, LEFT, &move_cursor_left);
-
-    
     
     h_insert_value(&keybind_hashmap, FIN, &move_last_column);
     h_insert_value(&keybind_hashmap, ORIG, &move_first_column);
-
     
     h_insert_value(&keybind_hashmap, CTRL_RIGHT, &move_word_forward);
     h_insert_value(&keybind_hashmap, CTRL_LEFT, &move_word_backward);
 
-    
     h_insert_value(&keybind_hashmap,  CTRL_ORIG, &reset_position);
     h_insert_value(&keybind_hashmap, CTRL_FIN, &move_end_of_line);
 
@@ -276,6 +267,8 @@ void init_keybind(void){
     h_insert_value(&keybind_hashmap, CTRL('c'), &copy_text);
 }
 
+// Here we check if the the key is different than left/right shift and CTRL + C
+// If it's different we update the is_selected value to false
 static void check_if_still_select(unsigned key){
     if(key == SHIFT_RIGHT || key == SHIFT_LEFT || key == CTRL('c'))
         return;
@@ -283,9 +276,11 @@ static void check_if_still_select(unsigned key){
     current_wp->selected.is_selected = false;
 }
 
+// Execute only key function event
 static void exec_function(unsigned char* keys, size_t index){
     unsigned key_maker = 0;
 
+    // We calculate the key for the hashmap
     for(size_t i = 0; i < index; ++i)
         key_maker += keys[i];
     
@@ -299,8 +294,10 @@ static void exec_function(unsigned char* keys, size_t index){
     print_screen(current_wp);
 }
 
+// Update line by adding the user character entered
 static void update_line(unsigned char* keys, size_t index){
     size_t i = 0;
+
     while(i < index){
         struct unicode_encoding unicode = utf8_to_unicode(keys, i, index);
 
@@ -310,7 +307,6 @@ static void update_line(unsigned char* keys, size_t index){
         ++current_wp->position.column;
     }
 
-    erase_line();
     print_line(current_wp);
 }
 
@@ -319,14 +315,21 @@ static void fusion_with_previous_line(void){
     current_wp->current_lp = current_wp->current_lp->l_back;
 
     if(current_wp->current_lp->l_content != NULL && lp_temp->l_content != NULL){
-        current_wp->current_lp->l_last_content->u_next = lp_temp->l_content;
-        lp_temp->l_content->u_back = current_wp->current_lp->l_last_content;
+        // If both lines are not empty fusion them
+
+        struct unicode_column* last_content = current_wp->current_lp->l_last_content;
+        struct unicode_column* temp_content = lp_temp->l_content;
+
+        last_content->u_next = temp_content;
+        temp_content->u_back = last_content;
 
         if(lp_temp->l_last_content != NULL)
             current_wp->current_lp->l_last_content = lp_temp->l_last_content;
 
         current_wp->position.column = current_wp->current_lp->l_size;
     }else if(current_wp->current_lp->l_content == NULL && lp_temp->l_content != NULL){
+        // If the current line is empty just take the temp line
+
         current_wp->current_lp->l_last_content = lp_temp->l_last_content;
         current_wp->current_lp->l_size = lp_temp->l_size;
         current_wp->current_lp->l_content = lp_temp->l_content;
@@ -335,8 +338,10 @@ static void fusion_with_previous_line(void){
     }
 
     if(lp_temp->l_next != NULL){
-        lp_temp->l_next->l_back = current_wp->current_lp;
-        current_wp->current_lp->l_next = lp_temp->l_next;
+        struct line* next_line = lp_temp->l_next;
+
+        next_line->l_back = current_wp->current_lp;
+        current_wp->current_lp->l_next = next_line;
     }else {
         current_wp->current_lp->l_next = NULL;
     }
@@ -347,31 +352,35 @@ static void fusion_with_previous_line(void){
 }
 
 
+// Remove the front char when we press SUPPR touch
 static void remove_front_char(void){
-    if(current_wp->position.column == current_wp->current_lp->l_size && current_wp->current_lp->l_next != NULL){
-        current_wp->current_lp = current_wp->current_lp->l_next;
-        fusion_with_previous_line();
-        print_line(current_wp);
-        return;
-    }else if(current_wp->position.column == current_wp->current_lp->l_size){
+    // Here we check if we are at the end of the line,
+    // if so do a fusion with the next line if it's not empty
+    if(current_wp->position.column == current_wp->current_lp->l_size){
+        if(current_wp->current_lp->l_next != NULL){
+            current_wp->current_lp = current_wp->current_lp->l_next;
+            fusion_with_previous_line();
+            print_line(current_wp);
+        }
+
         return;
     }
 
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
+    size_t i = 0;
 
-    for(size_t i = 0; i < current_wp->position.column; ++i){
-        if(unicode_it->u_next == NULL)
-            break;
-        
+    while(i++ < current_wp->position.column && unicode_it->u_next != NULL)
         unicode_it = unicode_it->u_next;
-    }
 
     struct unicode_column* temp_front_unicode = unicode_it->u_next;
 
+    // If the unicode_it is the first character in the line
     if(unicode_it->u_back == NULL){
+        temp_front_unicode->u_back = NULL;
         current_wp->current_lp->l_content = temp_front_unicode;
     }else{
         struct unicode_column* temp_back_unicode = unicode_it->u_back;
+        
         temp_back_unicode->u_next = temp_front_unicode;
         temp_front_unicode->u_back = temp_back_unicode;
     }
@@ -385,16 +394,14 @@ static void remove_selected_char(void){
     size_t selected_char_count = current_wp->selected.end - current_wp->selected.start;
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
     struct unicode_column* unicode_before_selected = NULL;
+    size_t i = 0;
 
-    for(size_t i = 0; i < current_wp->selected.start; ++i){
-        if(unicode_it->u_next == NULL)
-            break;
-
+    while(i++ < current_wp->selected.start && unicode_it->u_next != NULL)
         unicode_it = unicode_it->u_next;
-    }
 
     unicode_before_selected = unicode_it->u_back;
 
+    // Remove the selected character
     for(size_t i = 0; i < selected_char_count; ++i){
         if(unicode_it == NULL)
             break;
@@ -418,7 +425,7 @@ static void remove_selected_char(void){
     current_wp->selected.is_selected = false;
 }
 
-// TODO: improve this code because its a mess
+// Remove the back char when we press DELETE key
 static void remove_back_char(void){
     if(current_wp->selected.is_selected){
         remove_selected_char();
@@ -438,30 +445,32 @@ static void remove_back_char(void){
     }
 
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
+    size_t i = 0;
     
-    for(size_t i = 0; i < current_wp->position.column; ++i){
-        if(unicode_it->u_next == NULL)
-            break;
-        
+    while(i++ < current_wp->position.column && unicode_it->u_next != NULL)
         unicode_it = unicode_it->u_next;
-    }
 
     struct unicode_column* temp = unicode_it->u_back;
     
+    // If the deleted character is the last in the line just free it 
     if(unicode_it->u_next == NULL){
-        if(unicode_it->u_back != NULL)
-            unicode_it = unicode_it->u_back;
+        struct unicode_column* temp_current_unicode = unicode_it;
+
+        if(temp != NULL)
+            unicode_it = temp;
         
         unicode_it->u_next = NULL;
+        temp = temp_current_unicode;
 
-        temp = unicode_it->u_next;
         goto done;
     }
     
+    // TODO: wtf ?
     if(temp == NULL){
         current_wp->current_lp->l_content = NULL;
         current_wp->current_lp->l_last_content = NULL;
         current_wp->current_lp->l_size = 0;
+        
         free(unicode_it);
 
         current_wp->position.column = 0;
@@ -472,11 +481,10 @@ static void remove_back_char(void){
     if(temp->u_back == NULL){
         current_wp->current_lp->l_content = current_wp->current_lp->l_content->u_next;
         current_wp->current_lp->l_content->u_back = NULL;
-        goto done;
+    }else{
+        unicode_it->u_back = temp->u_back;
+        temp->u_back->u_next = unicode_it;
     }
-    
-    unicode_it->u_back = temp->u_back;
-    temp->u_back->u_next = unicode_it;
     
 done:
     free(temp);
@@ -487,21 +495,24 @@ done:
 
 static void enter(void){
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
+    size_t i = 0;
 
-    for(size_t i = 0; i < current_wp->position.column; ++i){
-        if(unicode_it->u_next == NULL)
-            break;
-        
+    while(i++ < current_wp->position.column && unicode_it->u_next != NULL)
         unicode_it = unicode_it->u_next;
-    }
 
     struct line* new_line = malloc(sizeof(struct line));
 
     if(unicode_it == NULL || unicode_it->u_next == NULL){
+        // If the current unicode or the next one is null
+        // Just create a new empty line
+
         new_line->l_content = NULL;
         new_line->l_size = 0;
         new_line->l_last_content = NULL;
     }else{
+        // If the current unicode is not empty
+        // Create a new line as content, the current unicode
+
         new_line->l_content = unicode_it;
         new_line->l_size = current_wp->current_lp->l_size - current_wp->position.column;
         new_line->l_last_content = current_wp->current_lp->l_last_content;
@@ -522,9 +533,8 @@ static void enter(void){
     new_line->l_back = current_wp->current_lp;
     new_line->l_next = current_wp->current_lp->l_next;
     
-    if(current_wp->current_lp->l_next != NULL)
+    if(new_line->l_next != NULL)
         new_line->l_next->l_back = new_line;
-    
     
     current_wp->current_lp->l_next = new_line;
     
@@ -566,7 +576,6 @@ void read_key(struct window* wp){
                 exec_function(keys, index);
             else
                 update_line(keys, index);
-            
 
             index = 0;
             free(keys);
