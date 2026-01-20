@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <stddef.h>
 
+// Maximum utf8 size we support
 #define MAX_UTF8_SIZE 4
 
 struct __attribute__((packed)) unicode_encoding {

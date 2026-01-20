@@ -501,6 +501,7 @@ static void enter(void){
         unicode_it = unicode_it->u_next;
 
     struct line* new_line = malloc(sizeof(struct line));
+    assert(new_line != NULL);
 
     if(unicode_it == NULL || unicode_it->u_next == NULL){
         // If the current unicode or the next one is null
@@ -553,6 +554,7 @@ void read_key(struct window* wp){
     key_poll.events = POLLIN;
 
     unsigned char *keys = malloc(1);
+    assert(keys != NULL);
     size_t index = 0;
 
     while(!should_close) {
@@ -580,6 +582,7 @@ void read_key(struct window* wp){
             index = 0;
             free(keys);
             keys = malloc(1);
+            assert(keys != NULL);
         }
     }
 

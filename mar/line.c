@@ -5,13 +5,10 @@
 #include <stdlib.h>
 #include <assert.h>
 
+// Convert the file content to line
 struct line* content_to_line(const unsigned char* content, size_t size){
-    struct line* lp; 
-
-    if((lp = malloc(sizeof(struct line))) == NULL){
-        printf("Failed to alloc line\n");
-        return NULL;
-    }
+    struct line* lp = malloc(sizeof(struct line));
+    assert(lp != NULL);
 
     lp->l_content = NULL;
     lp->l_back = NULL;
@@ -21,20 +18,23 @@ struct line* content_to_line(const unsigned char* content, size_t size){
     size_t start_content = 0;
     struct line* lp_it = lp;
 
-    while(i < size){
+    // Do a while loop until it reach the end of the file
+    while(i < size && content[i] != '\0'){
         if(content[i] == '\n'){
+            // When it reach the end of the current line we should parse it
+
             lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
             start_content = i + 1;
-        } else if(content[i] == '\0'){
-            if(start_content < i)
-                lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
-            
-            break;
         }
 
         ++i;
     }
 
+    // If there is some data parse it
+    if(start_content < i)
+        lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
+
+    // Here we release the first line because it's an empty line
     if(lp->l_next != NULL){
         lp_it = lp->l_next;
         lp_it->l_back = NULL;
@@ -45,18 +45,20 @@ struct line* content_to_line(const unsigned char* content, size_t size){
     return lp_it;
 }
 
+// Convert the current line to unicode
 static void line_to_unicode(const unsigned char* content, size_t begin, size_t end, struct line* lp){
     struct unicode_column* unicodes = malloc(sizeof(struct unicode_column));
     assert(unicodes != NULL);
-
     unicodes->u_back = NULL;
     unicodes->u_next = NULL;
 
     struct unicode_column* unicode_it = unicodes;
 
     size_t index = 0;
+    // Calculate the size of the current line
     size_t size = end - begin;
 
+    // Then parse every utf8 in the current line to unicode
     while(index < size){
         ++lp->l_size;
         struct unicode_encoding result = utf8_to_unicode(&content[begin], index, size);
@@ -65,6 +67,7 @@ static void line_to_unicode(const unsigned char* content, size_t begin, size_t e
         struct unicode_column* temp = unicode_it;
 
         unicode_it = unicode_it->u_next = malloc(sizeof(struct unicode_column));
+        assert(unicode_it != NULL);
         unicode_it->unicode = result;
 
         unicode_it->u_back = temp;
@@ -75,6 +78,7 @@ static void line_to_unicode(const unsigned char* content, size_t begin, size_t e
     
     unicode_it = unicodes->u_next;
 
+    // Here we free the first unicode because it's an empty unicode
     if(unicode_it != NULL)
         unicode_it->u_back = NULL;
     
@@ -85,12 +89,8 @@ static void line_to_unicode(const unsigned char* content, size_t begin, size_t e
 }
 
 struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, struct line* lp_back){
-    struct line* lp;
-
-    if((lp = malloc(sizeof(struct line))) == NULL){
-        printf("Failed to alloc line struct\n");
-        return NULL;
-    }
+    struct line* lp = malloc(sizeof(struct line));
+    assert(lp != NULL);
 
     lp->l_size = 0;
     lp->l_next = NULL;
@@ -102,7 +102,7 @@ struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, str
 
 static void insert_unicode_node(struct unicode_column* up, struct unicode_encoding unicode){
     struct unicode_column* temp = malloc(sizeof(struct unicode_column));
-
+    assert(temp != NULL);
     temp->unicode = unicode;
     temp->u_next = NULL;
     temp->u_back = NULL;
@@ -116,12 +116,15 @@ static void insert_unicode_node(struct unicode_column* up, struct unicode_encodi
     temp->u_back = up;
 }
 
+// This function is used for insert the user value
 void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_t column){
     ++lp->l_size;
     struct unicode_column* unicode_it = lp->l_content;
 
+    // If the line is empty
     if(unicode_it == NULL){
         lp->l_content = malloc(sizeof(struct unicode_column));
+        assert(lp->l_content != NULL);
         lp->l_content->unicode = unicode;
         lp->l_content->u_back = NULL;
         lp->l_content->u_next = NULL;
@@ -131,8 +134,10 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
         return;
     }
 
+    // If we are at the first column just insert the unicode 
     if(column == 0){
         struct unicode_column* temp = malloc(sizeof(struct unicode_column));
+        assert(temp != NULL);
         temp->unicode = unicode;
         temp->u_next = lp->l_content;
         temp->u_back = NULL;
@@ -143,6 +148,7 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
         return;
     }
 
+    // Iterate until we reach the current column
     for(size_t i = 0; i < column-1; ++i){
         if(unicode_it->u_next == NULL){
             insert_unicode_node(unicode_it, unicode);
@@ -155,24 +161,23 @@ void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_
     insert_unicode_node(unicode_it, unicode);
 }
 
+// Return what the user selected
 char* return_copied_char(struct line* lp, size_t start, size_t end, size_t* returned_size){
-    size_t selected_size = end-start;
-    char* selected_char = malloc(1);
+    size_t selected_size = end - start;
     size_t content_size = 0;
+    char* selected_char = malloc(1);
+    assert(selected_char != NULL);
 
     struct unicode_column* unicode_it = lp->l_content;
 
-    for(size_t i = 0; i < start; ++i){
-        if(unicode_it->u_next == NULL)
-            break;
-
+    size_t i = 0;
+    while(i++ < start && unicode_it->u_next != NULL)
         unicode_it = unicode_it->u_next;
-    }
 
+    // Iter from start to the end and take the value
     for(size_t i = start; i < end; ++i){
         if(unicode_it == NULL)
             break;
-        
 
         struct utf8_encoding utf8 = unicode_to_utf8(unicode_it->unicode);
 
@@ -198,7 +203,6 @@ char* return_copied_char(struct line* lp, size_t start, size_t end, size_t* retu
 static void free_unicode(struct unicode_column* up){
     if(up->u_next != NULL)
         free_unicode(up->u_next);
-    
 
     free(up);
     up = NULL;

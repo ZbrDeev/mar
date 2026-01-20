@@ -1,13 +1,12 @@
 #include "window.h"
 #include "ansi.h"
 #include "line.h"
+#include <assert.h>
 #include <stdlib.h>
 
 struct window* alloc_window(void){
-    struct window* wp;
-
-    if((wp = malloc(sizeof(struct window))) == NULL)
-        return NULL;
+    struct window* wp = malloc(sizeof(struct window));
+    assert(wp != NULL);
     
     wp->w_next = NULL;
     wp->w_back = NULL;
@@ -34,9 +33,9 @@ void render_window(struct window* wp){
 }
 
 static void free_window_node(struct window* wp){
-    if(wp->w_next != NULL){
+    if(wp->w_next != NULL)
         free_window(wp->w_next);
-    }
+    
 
     l_free(wp->first_lp);
     free(wp);

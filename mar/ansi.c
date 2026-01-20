@@ -1,6 +1,7 @@
 #include "ansi.h"
 #include "term.h"
 #include "window.h"
+#include <assert.h>
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -53,6 +54,7 @@ void render_statbar(struct window* wp){
 
     size_t box_text_size = snprintf(NULL, 0, "File: %s - Line: %ld - Column: %ld", wp->filename, wp->position.line, wp->position.column);
     char* box_text = malloc(box_text_size + 1);
+    assert(box_text != NULL);
     snprintf(box_text, box_text_size+1, "File: %s - Line: %ld - Column: %ld", wp->filename, wp->position.line, wp->position.column);
 
     temp_move_cursor(new_position);

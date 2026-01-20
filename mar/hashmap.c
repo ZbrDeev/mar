@@ -1,12 +1,12 @@
 #include "hashmap.h"
+#include <assert.h>
 #include <stdlib.h>
 
 struct hashmap h_init(void){
     struct hashmap hash;
 
-    for(size_t i = 0; i < MAX_CAPACITY; ++i){
+    for(size_t i = 0; i < MAX_CAPACITY; ++i)
         hash.nodes[i] = NULL;
-    }
 
     return hash;
 }
@@ -16,9 +16,8 @@ struct node* h_get_value(struct hashmap* hp, unsigned key){
     struct node* np = hp->nodes[key_hashed];
 
     while(np != NULL){
-        if(np->key == key){
+        if(np->key == key)
             return np;
-        }
 
         np = np->next;
     }
@@ -30,6 +29,7 @@ void h_insert_value(struct hashmap* hp, unsigned key, hashmap_function_t* functi
     unsigned key_hashed = CALC_KEY_INDEX(key);
 
     struct node* new_node = malloc(sizeof(struct node));
+    assert(new_node != NULL);
     new_node->key = key;
     new_node->function = function;
     new_node->next = NULL;
@@ -44,9 +44,8 @@ void h_insert_value(struct hashmap* hp, unsigned key, hashmap_function_t* functi
 }
 
 static void free_node(struct node* np){
-    if(np == NULL){
+    if(np == NULL)
         return;
-    }
 
     free_node(np->next);
     free(np);
@@ -54,8 +53,7 @@ static void free_node(struct node* np){
 
 void h_free(struct hashmap* hp){
     for(size_t i = 0; i < MAX_CAPACITY; ++i){
-        if(hp->nodes[i] != NULL){
+        if(hp->nodes[i] != NULL)
             free_node(hp->nodes[i]);
-        }
     }
 }

@@ -9,9 +9,8 @@ FILE* open_file(const char* filename){
     FILE *fp;
 
     // Open the file in read and write mode
-    if((fp = fopen(filename, "r")) == NULL){
+    if((fp = fopen(filename, "r")) == NULL)
         fp = fopen(filename, "wr");
-    }
 
     // Here we don't mind if the value is NULL or file descriptor
     return fp;
@@ -29,6 +28,7 @@ unsigned char* read_file(FILE* fp, size_t *size){
     rewind(fp);
 
     unsigned char *buffer = malloc(*size + 1);
+    assert(buffer != NULL);
     buffer[*size] = '\0';
 
     fread(buffer, *size, 1, fp);
@@ -39,6 +39,7 @@ unsigned char* read_file(FILE* fp, size_t *size){
 
 void save_file(const char* filename, struct line* lp){
     char* content_result = malloc(1);
+    assert(content_result != NULL);
 
     size_t content_size = 0;
     struct line* lp_it = lp;

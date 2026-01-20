@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+// For copy and paste to the linux clipboard
 void copy_to_clipboard(char* value, size_t size){
     char* session_type = getenv("XDG_SESSION_TYPE");
     FILE* fp = NULL;
