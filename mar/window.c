@@ -4,7 +4,7 @@
 #include <assert.h>
 #include <stdlib.h>
 
-struct window* alloc_window(void){
+struct window* w_alloc(void){
     struct window* wp = malloc(sizeof(struct window));
     assert(wp != NULL);
     

@@ -41,7 +41,7 @@ struct window {
     struct window* w_back;
 };
 
-struct window* alloc_window(void);
+struct window* w_alloc(void);
 
 void render_window(struct window* wp);
 
