@@ -32,7 +32,7 @@ int main(int argc, char *argv[]) {
     if(content == NULL)
         return EXIT_FAILURE;
 
-        // Initiate the first window
+    // Initiate the first window
     struct window* wp = w_alloc();
     wp->current_lp = wp->first_lp = content_to_line(content, size);
     wp->filename = argv[1];
