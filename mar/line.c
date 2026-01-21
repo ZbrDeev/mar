@@ -212,10 +212,8 @@ void l_free(struct line* lp){
     if(lp->l_next != NULL)
         l_free(lp->l_next);
     
-
-    if(lp->l_content != NULL){
+    if(lp->l_content != NULL)
         free_unicode(lp->l_content);
-    }
 
     free(lp);
     lp = NULL;

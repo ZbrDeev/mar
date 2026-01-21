@@ -11,9 +11,9 @@ void move_cursor(struct window* wp){
     putc(CSI, stdout);
 
     if(wp->position.line > MAX_TEXT_LINE)
-        printf("%ld;%ldH", wp->y_cursor+1, wp->position.column+1);
+        printf("%ld;%ldH", wp->y_cursor + 1, wp->position.column + 1);
     else
-        printf("%ld;%ldH", wp->position.line+1, wp->position.column+1);
+        printf("%ld;%ldH", wp->position.line + 1, wp->position.column + 1);
 
     flush();
 }
