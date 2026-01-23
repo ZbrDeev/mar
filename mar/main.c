@@ -10,7 +10,7 @@
 
 int main(int argc, char *argv[]) {
     if(argc < 1 ){
-        printf("Usage: mar <file>");
+        printf("Usage: mar <file>\n");
         return EXIT_FAILURE;
     }
 
@@ -21,7 +21,8 @@ int main(int argc, char *argv[]) {
     FILE* fp = open_file(argv[1]);
 
     if(fp == NULL){
-        printf("Failed to open file");
+        printf("Failed to open file\n");
+        close_term();
         return EXIT_FAILURE;
     }
 
@@ -29,8 +30,10 @@ int main(int argc, char *argv[]) {
     size_t size = 0;
     unsigned char* content = read_file(fp, &size);
 
-    if(content == NULL)
+    if(content == NULL){
+        close_term();
         return EXIT_FAILURE;
+    }
 
     // Initiate the first window
     struct window* wp = w_alloc();
