@@ -6,9 +6,10 @@
 
 #define ESCAPE 0x1b
 #define CSI 0x5b
-#define CTRL(key) key - 96
-#define DELETE_KEY 127
-#define ENTER_KEY 13
+#define CTRL(key) key - 0x60
+#define DELETE_KEY 0x7f
+#define ENTER_KEY 0xd
+#define TAB 0x9
 
 #define MAX_LINE 65
 #define MAX_COL 100

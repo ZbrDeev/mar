@@ -195,5 +195,3 @@ void print_line(struct window* wp){
     putc('\n', stdout);
     temp_move_cursor(temp_position);
 }
-
-
