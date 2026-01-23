@@ -13,6 +13,8 @@ struct line* content_to_line(const unsigned char* content, size_t size){
     lp->l_content = NULL;
     lp->l_back = NULL;
     lp->l_next = NULL;
+    lp->l_last_content = NULL;
+    lp->l_size = 0;
 
     size_t i = 0;
     size_t start_content = 0;
@@ -116,49 +118,97 @@ static void insert_unicode_node(struct unicode_column* up, struct unicode_encodi
     temp->u_back = up;
 }
 
-// This function is used for insert the user value
-void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_t column){
-    ++lp->l_size;
-    struct unicode_column* unicode_it = lp->l_content;
+// Insert the unicode in the empty line
+static void insert_char_in_empty_line(struct line* lp, struct unicode_encoding unicode){
+    lp->l_content = malloc(sizeof(struct unicode_column));
+    assert(lp->l_content != NULL);
+    lp->l_content->u_back = NULL;
+    lp->l_content->u_next = NULL;
+    lp->l_last_content = lp->l_content;
+    lp->l_size = 1;
 
-    // If the line is empty
-    if(unicode_it == NULL){
-        lp->l_content = malloc(sizeof(struct unicode_column));
-        assert(lp->l_content != NULL);
-        lp->l_content->unicode = unicode;
-        lp->l_content->u_back = NULL;
-        lp->l_content->u_next = NULL;
-        lp->l_last_content = lp->l_content;
-        lp->l_size = 1;
+    if(unicode.result == 0x9){
+        unicode.result = 0x20;
+        lp->l_size = 2;
 
-        return;
+        struct unicode_column* next_unicode = lp->l_content->u_next = malloc(sizeof(struct unicode_column));
+        assert(next_unicode != NULL);
+
+        next_unicode->unicode = unicode;
+        next_unicode->u_next = NULL;
+        next_unicode->u_back = lp->l_content;
     }
 
-    // If we are at the first column just insert the unicode 
-    if(column == 0){
-        struct unicode_column* temp = malloc(sizeof(struct unicode_column));
-        assert(temp != NULL);
-        temp->unicode = unicode;
-        temp->u_next = lp->l_content;
-        temp->u_back = NULL;
+    lp->l_content->unicode = unicode;
+}
 
-        lp->l_content->u_back = temp;
+// Insert the value at the beginning of the line
+static void insert_char_at_beginning_line(struct line* lp, struct unicode_encoding unicode){
+    struct unicode_column* temp = malloc(sizeof(struct unicode_column));
+    assert(temp != NULL);
+    temp->u_back = NULL;
+    
+    if(unicode.result == 0x9){
+        struct unicode_column* next_unicode = malloc(sizeof(struct unicode_column));
+        assert(next_unicode != NULL);
+
+        unicode.result = 0x20;
+
+        temp->unicode = unicode;
+        temp->u_next = next_unicode;
+
+        next_unicode->u_next = lp->l_content;
+        next_unicode->u_back = temp;
+        next_unicode->unicode = unicode;
+
+        lp->l_size += 2;
+        lp->l_content->u_back = next_unicode;
         lp->l_content = temp;
 
         return;
     }
 
-    // Iterate until we reach the current column
-    for(size_t i = 0; i < column-1; ++i){
-        if(unicode_it->u_next == NULL){
-            insert_unicode_node(unicode_it, unicode);
-            return;
-        }
+    temp->u_next = lp->l_content;
+    lp->l_content->u_back = temp;
+    temp->unicode = unicode;
+    lp->l_content = temp;
+    ++lp->l_size;
+}
 
+// This function is used for insert the user value
+void insert_char_in_line(struct line* lp, struct unicode_encoding unicode, size_t column){
+    struct unicode_column* unicode_it = lp->l_content;
+
+    // If the line is empty
+    if(unicode_it == NULL){
+        insert_char_in_empty_line(lp, unicode);
+
+        return;
+    }
+
+    // If we are at the first column just insert the unicode 
+    if(column == 0){        
+        insert_char_at_beginning_line(lp, unicode);
+
+        return;
+    }
+
+    size_t i = 0;
+
+    // Iterate until we reach the current column
+    while(i++ < column-1 && unicode_it->u_next != NULL)
+        unicode_it = unicode_it->u_next;
+
+    // If the value is a tabulation, replace it by double space
+    if(unicode.result == 0x9){
+        unicode.result = 0x20;
+        insert_unicode_node(unicode_it, unicode);
+        ++lp->l_size;
         unicode_it = unicode_it->u_next;
     }
-    
+
     insert_unicode_node(unicode_it, unicode);
+    ++lp->l_size;
 }
 
 // Return what the user selected
