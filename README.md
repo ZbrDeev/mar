@@ -1,4 +1,4 @@
-# Mar - A Simple Text Editor Written
+# Mar - A Simple Text Editor
 
 Mar means Morocco in French (Maroc). Mar was created to offer a simple text editor that is quick to use and write, and provides basic keyboard commands. It supports UTF-8 encoding.
 
