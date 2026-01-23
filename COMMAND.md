@@ -1,5 +1,6 @@
 # Supported Command
 
+## Navigation
 | Keyboard          | Description                     |
 | ----------------- | ------------------------------- |
 | **Up**            | Go to the previous line         |
@@ -12,12 +13,28 @@
 | **Ctrl + Right**  | Go to the next word             |
 | **Ctrl + Home**   | Go to the beginning of the file |
 | **Ctrl + End**    | Go to the end of the file       |
+
+## Selection and clipboard control
+| Keyboard          | Description                     |
+| ----------------- | ------------------------------- |
 | **Shift + Left**  | Select the previous character   |
 | **Shift + Right** | Select the next character       |
-| **Ctrl + Q**      | Exit the editor                 |
-| **Ctrl + S**      | Save the file                   |
 | **Ctrl + C**      | Copy to the clipboard           |
 | **Ctrl + V**      | Paste from the clipboard        |
+
+## File control
+| Keyboard          | Description                     |
+| ----------------- | ------------------------------- |
+| **Ctrl + S**      | Save the file                   |
+
+## Editor control
+| Keyboard          | Description                     |
+| ----------------- | ------------------------------- |
+| **Ctrl + Q**      | Exit the editor                 |
+
+## Text control
+| Keyboard          | Description                     |
+| ----------------- | ------------------------------- |
 | **Backspace**     | Delete the previous character   |
 | **Delete**        | Delete the next character       |
 | **Enter**         | Create a new line               |
