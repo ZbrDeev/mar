@@ -31,7 +31,12 @@ unsigned char* read_file(FILE* fp, size_t *size){
     assert(buffer != NULL);
     buffer[*size] = '\0';
 
-    fread(buffer, *size, 1, fp);
+    // Check if we read the file properly
+    if(fread(buffer, *size, 1, fp) != 1){
+        free(buffer);
+        return NULL;
+    }
+
     fclose(fp);
 
     return buffer;

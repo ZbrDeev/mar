@@ -562,7 +562,11 @@ void read_key(struct window* wp){
         poll(&key_poll, 1, -1);
 
         unsigned char c;
-        read(STDIN_FILENO, &c, 1);
+
+        // We are assuming that when we read the STDIN file we have an error
+        // So we should free and end the process
+        if(read(STDIN_FILENO, &c, 1) != 1)
+            goto end_of_loop;
 
         unsigned char* temp = realloc(keys, ++index);
         assert(temp != NULL);
@@ -587,6 +591,7 @@ void read_key(struct window* wp){
         }
     }
 
+end_of_loop:
     free(keys);
     h_free(&keybind_hashmap);
 }
