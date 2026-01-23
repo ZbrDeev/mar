@@ -304,7 +304,7 @@ static void update_line(unsigned char* keys, size_t index){
         i += unicode.bytes_size;
 
         insert_char_in_line(current_wp->current_lp, unicode, current_wp->position.column);
-        ++current_wp->position.column;
+        current_wp->position.column += unicode.result == 0x9 ? 2 : 1;
     }
 
     print_line(current_wp);
@@ -452,6 +452,20 @@ static void remove_back_char(void){
 
     struct unicode_column* temp = unicode_it->u_back;
     
+    // TODO: wtf ?
+    if(temp == NULL){
+        current_wp->current_lp->l_content = NULL;
+        current_wp->current_lp->l_last_content = NULL;
+        current_wp->current_lp->l_size = 0;
+        
+        free(unicode_it);
+
+        current_wp->position.column = 0;
+        print_line(current_wp);
+
+        return;
+    }
+    
     // If the deleted character is the last in the line just free it 
     if(unicode_it->u_next == NULL){
         struct unicode_column* temp_current_unicode = unicode_it;
@@ -463,19 +477,6 @@ static void remove_back_char(void){
         temp = temp_current_unicode;
 
         goto done;
-    }
-    
-    // TODO: wtf ?
-    if(temp == NULL){
-        current_wp->current_lp->l_content = NULL;
-        current_wp->current_lp->l_last_content = NULL;
-        current_wp->current_lp->l_size = 0;
-        
-        free(unicode_it);
-
-        current_wp->position.column = 0;
-
-        return;
     }
 
     if(temp->u_back == NULL){
@@ -560,21 +561,21 @@ void read_key(struct window* wp){
     while(!should_close) {
         poll(&key_poll, 1, -1);
 
-        unsigned char a;
-        read(STDIN_FILENO, &a, 1);
+        unsigned char c;
+        read(STDIN_FILENO, &c, 1);
 
         unsigned char* temp = realloc(keys, ++index);
         assert(temp != NULL);
         keys = temp;
 
-        keys[index-1] = a;
+        keys[index-1] = c;
 
         if(poll(&key_poll, 1, 1) <= 0){
             if(keys[0] == DELETE_KEY)
                 remove_back_char();
             else if(keys[0] == ENTER_KEY)
                 enter();
-            else if(keys[0] == ESCAPE || keys[0] <= 26)
+            else if((keys[0] == ESCAPE || keys[0] <= 26) && keys[0] != TAB)
                 exec_function(keys, index);
             else
                 update_line(keys, index);
