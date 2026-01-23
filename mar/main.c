@@ -21,8 +21,8 @@ int main(int argc, char *argv[]) {
     FILE* fp = open_file(argv[1]);
 
     if(fp == NULL){
-        printf("Failed to open file\n");
         close_term();
+        printf("Failed to open file\n");
         return EXIT_FAILURE;
     }
 
