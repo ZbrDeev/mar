@@ -31,11 +31,7 @@ unsigned char* read_file(FILE* fp, size_t *size){
     assert(buffer != NULL);
     buffer[*size] = '\0';
 
-    // Check if we read the file properly
-    if(fread(buffer, *size, 1, fp) != 1){
-        free(buffer);
-        return NULL;
-    }
+    fread(buffer, *size, 1, fp);
 
     fclose(fp);
 
@@ -53,9 +49,9 @@ void save_file(const char* filename, struct line* lp){
         struct unicode_column* unicode_it = lp_it->l_content;
 
         for(size_t i = 0; i < lp_it->l_size; ++i){
-            if(unicode_it == NULL){
+            if(unicode_it == NULL)
                 break;
-            }
+            
 
             struct utf8_encoding utf8 = unicode_to_utf8(unicode_it->unicode);
 
