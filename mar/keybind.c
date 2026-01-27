@@ -382,7 +382,11 @@ static void remove_front_char(void){
         struct unicode_column* temp_back_unicode = unicode_it->u_back;
         
         temp_back_unicode->u_next = temp_front_unicode;
-        temp_front_unicode->u_back = temp_back_unicode;
+
+        if(temp_front_unicode != NULL)
+          temp_front_unicode->u_back = temp_back_unicode;
+        else
+          current_wp->current_lp->l_last_content = temp_back_unicode;
     }
 
     free(unicode_it);
