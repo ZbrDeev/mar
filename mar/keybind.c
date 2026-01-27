@@ -331,7 +331,6 @@ static void fusion_with_previous_line(void){
         // If the current line is empty just take the temp line
 
         current_wp->current_lp->l_last_content = lp_temp->l_last_content;
-        current_wp->current_lp->l_size = lp_temp->l_size;
         current_wp->current_lp->l_content = lp_temp->l_content;
 
         current_wp->position.column = 0;
@@ -346,6 +345,7 @@ static void fusion_with_previous_line(void){
         current_wp->current_lp->l_next = NULL;
     }
 
+    current_wp->position.column = current_wp->current_lp->l_size;
     current_wp->current_lp->l_size += lp_temp->l_size;
 
     free(lp_temp);
@@ -376,7 +376,9 @@ static void remove_front_char(void){
 
     // If the unicode_it is the first character in the line
     if(unicode_it->u_back == NULL){
-        temp_front_unicode->u_back = NULL;
+        if(temp_front_unicode != NULL)
+          temp_front_unicode->u_back = NULL;
+
         current_wp->current_lp->l_content = temp_front_unicode;
     }else{
         struct unicode_column* temp_back_unicode = unicode_it->u_back;
