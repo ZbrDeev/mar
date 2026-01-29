@@ -13,6 +13,9 @@
 #define FIN ESCAPE + CSI + 0x46
 #define ORIG ESCAPE + CSI + 0x48
 
+#define PG_BACK ESCAPE + CSI + 0x35 + 0x7e
+#define PG_NEXT ESCAPE + CSI + 0x36 + 0x7e
+
 #define CTRL_RIGHT ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x43
 #define CTRL_LEFT ESCAPE + CSI + 0x31 + 0x3b + 0x35 + 0x44
 

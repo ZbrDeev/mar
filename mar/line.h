@@ -19,7 +19,7 @@ struct line {
 };
 
 
-struct line* content_to_line(const unsigned char* content, size_t size);
+struct line* content_to_line(const unsigned char* content, size_t size, size_t *line_size);
 
 struct line* l_alloc(const unsigned char* content, size_t begin, size_t end, struct line* lp_back);
 

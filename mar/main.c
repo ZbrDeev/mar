@@ -37,7 +37,7 @@ int main(int argc, char *argv[]) {
 
     // Initiate the first window
     struct window* wp = w_alloc();
-    wp->current_lp = wp->first_lp = content_to_line(content, size);
+    wp->current_lp = wp->first_lp = content_to_line(content, size, &wp->line_size);
     wp->filename = argv[1];
 
     render_window(wp);

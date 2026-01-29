@@ -6,7 +6,7 @@
 #include <assert.h>
 
 // Convert the file content to line
-struct line* content_to_line(const unsigned char* content, size_t size){
+struct line* content_to_line(const unsigned char* content, size_t size, size_t *line_size){
     struct line* lp = malloc(sizeof(struct line));
     assert(lp != NULL);
 
@@ -27,6 +27,7 @@ struct line* content_to_line(const unsigned char* content, size_t size){
 
             lp_it = lp_it->l_next = l_alloc(content, start_content, i, lp_it);
             start_content = i + 1;
+            ++(*line_size);
         }
 
         ++i;

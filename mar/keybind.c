@@ -233,6 +233,43 @@ static void save(void){
     current_wp->status_bar_text = "File saved successfully";
 }
 
+static void move_back_page(void){
+    size_t current_line_position = current_wp->position.line;
+
+    if(current_line_position <= 30)
+        current_wp->position.line = 0;
+    else
+        current_wp->position.line -= 30;
+
+    current_wp->y_cursor = 0;
+
+    size_t i = 0;
+
+    while(i++ < 30 && current_wp->current_lp->l_back != NULL)
+        current_wp->current_lp = current_wp->current_lp->l_back;
+
+    current_wp->position.column = 0;
+}
+
+static void move_front_page(void){
+    size_t current_line_position = current_wp->position.line;
+    size_t line_size = current_wp->line_size;
+
+    if((current_line_position += 30) > line_size)
+        current_wp->position.line = line_size;
+    else
+        current_wp->position.line = current_line_position;
+
+    current_wp->y_cursor = 0;
+
+    size_t i = 0;
+    
+    while(i++ < 30 && current_wp->current_lp->l_next != NULL)
+        current_wp->current_lp = current_wp->current_lp->l_next;
+
+    current_wp->position.column = 0;
+}
+
 void init_keybind(void){
     keybind_hashmap = h_init();
 
@@ -248,8 +285,11 @@ void init_keybind(void){
     h_insert_value(&keybind_hashmap, CTRL_RIGHT, &move_word_forward);
     h_insert_value(&keybind_hashmap, CTRL_LEFT, &move_word_backward);
 
-    h_insert_value(&keybind_hashmap,  CTRL_ORIG, &reset_position);
+    h_insert_value(&keybind_hashmap, CTRL_ORIG, &reset_position);
     h_insert_value(&keybind_hashmap, CTRL_FIN, &move_end_of_line);
+
+    h_insert_value(&keybind_hashmap, PG_BACK, &move_back_page);
+    h_insert_value(&keybind_hashmap, PG_NEXT, &move_front_page);
 
     // Select control
     h_insert_value(&keybind_hashmap, SHIFT_RIGHT, &select_right);
@@ -349,6 +389,7 @@ static void fusion_with_previous_line(void){
     current_wp->current_lp->l_size += lp_temp->l_size;
 
     free(lp_temp);
+    --current_wp->line_size;
 }
 
 
@@ -548,6 +589,7 @@ static void enter(void){
     
     current_wp->position.column = 0;
     ++current_wp->position.line;
+    ++current_wp->line_size;
     current_wp->current_lp = current_wp->current_lp->l_next;
 
     print_screen(current_wp);
