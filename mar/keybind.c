@@ -545,19 +545,30 @@ static void enter(void){
     struct unicode_column* unicode_it = current_wp->current_lp->l_content;
     size_t i = 0;
 
-    while(i++ < current_wp->position.column && unicode_it->u_next != NULL)
+    while(i++ < current_wp->position.column && unicode_it != NULL)
         unicode_it = unicode_it->u_next;
 
     struct line* new_line = malloc(sizeof(struct line));
     assert(new_line != NULL);
 
-    if(unicode_it == NULL || unicode_it->u_next == NULL){
+    if(unicode_it == NULL){
         // If the current unicode or the next one is null
         // Just create a new empty line
 
         new_line->l_content = NULL;
         new_line->l_size = 0;
         new_line->l_last_content = NULL;
+    }else if(unicode_it->u_next == NULL && current_wp->current_lp->l_size > 1){
+        new_line->l_last_content = new_line->l_content = unicode_it;
+        new_line->l_size = 1;
+
+        current_wp->current_lp->l_last_content = unicode_it->u_back;
+        --current_wp->current_lp->l_size;
+        
+        if(current_wp->current_lp->l_last_content != NULL)
+            current_wp->current_lp->l_last_content->u_next = NULL;
+
+        unicode_it->u_back = NULL;
     }else{
         // If the current unicode is not empty
         // Create a new line as content, the current unicode
