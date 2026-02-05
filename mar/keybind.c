@@ -514,7 +514,16 @@ static void remove_back_char(void){
     }
     
     // If the deleted character is the last in the line just free it 
-    if(unicode_it->u_next == NULL){
+    if(unicode_it->u_next == NULL && current_wp->current_lp->l_size > 1){
+        unicode_it->u_back = temp->u_back;
+        
+        if(unicode_it->u_back != NULL)
+            unicode_it->u_back->u_next = unicode_it;
+        else
+            current_wp->current_lp->l_content = unicode_it;
+
+        goto done;
+    }else if(unicode_it->u_next == NULL){
         struct unicode_column* temp_current_unicode = unicode_it;
 
         if(temp != NULL)
