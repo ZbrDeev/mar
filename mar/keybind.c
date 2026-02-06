@@ -514,7 +514,7 @@ static void remove_back_char(void){
     }
     
     // If the deleted character is the last in the line just free it 
-    if(unicode_it->u_next == NULL && current_wp->current_lp->l_size > 1){
+    if(unicode_it->u_next == NULL && current_wp->current_lp->l_size > 1 && current_wp->position.column == current_wp->current_lp->l_size - 1){
         unicode_it->u_back = temp->u_back;
         
         if(unicode_it->u_back != NULL)
